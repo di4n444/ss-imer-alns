@@ -103,6 +103,58 @@ into this file. This section just indexes what CSV holds what, once they exist.
   exponent γ + KS statistic, spectral threshold, bow-tie sizes, k-core, Louvain Q) → TBD CSV
 - **Confirmed via `create_graph.py` (reproduces PILOT_TESTS.md §12 exactly)**: N = 3683,
   M = 22650, mean out-degree = 6.1499, mean p = 0.1063, median p = 0.0180.
+- **`analyse_graph.py` output (`data/topology_summary.csv`, `data/edge_features.csv`),
+  cross-checked against PILOT_TESTS.md where a prior number exists:**
+
+  | quantity | this run | pilot notes | match |
+  |---|---|---|---|
+  | path length (directed, within-component) | 3.7395 | 3.7395 | exact |
+  | path length, ER null | 4.7337 | 4.7237 | close (ER is stochastic) |
+  | clustering (undirected transitivity) | 0.0760 | 0.0760 | exact |
+  | clustering, ER null | 0.0035 | 0.0030 | close (ER is stochastic) |
+  | λmax(A), λc = 1/λmax(A) | 38.9545, 0.02567 | 38.95, 0.0257 | exact |
+  | λmax(P) | 7.6311 | 7.63 | exact |
+  | SCC giant / count | 3192 / 477 | 3192 (86.7%) | exact |
+  | WCC giant / count | 3670 / 7 | 3670 | exact |
+  | k-core max, nodes in it | 32, 73 | 32, 73 | exact |
+  | assortativity r | −0.15458 | −0.1546 | exact |
+  | Granovetter local bridges | 7266 (32.1%) | 7266 (32.1%) | exact |
+  | Louvain best-of-20 | 26 comm., Q=0.4907, range 21–30 comm. / Q 0.460–0.4907 | 31, Q=0.491 (best-of-20) | same ballpark, not identical — expected for a stochastic algorithm across different library/RNG-stream versions |
+  | **out-degree power-law γ, xmin, KS** | **2.148, xmin=8, KS=0.038** | **γ_out=2.81, xmin=41, KS≈0.058** | **mismatch — see below** |
+
+  **Power-law fit discrepancy, unresolved**: computed via the `powerlaw` package's
+  Clauset–Shalizi–Newman (2009) MLE with automatic xmin selection (the standard,
+  citable method — not just κ, per PILOT_TESTS.md §36's own warning). Tried in-degree,
+  out-degree, and a forced `xmin=1` variant; none reproduce pilot's γ≈2.8/xmin=41. Since
+  every *other* number above matches pilot's notes exactly (same graph, same
+  construction), this looks like a difference in the old pilot code's fitting procedure
+  itself, not a data problem — and PILOT_TESTS.md's own framing already warned some pilot
+  numbers "could be wrong or hallucinated." **Trusting this run's number** (principled,
+  reproducible, standard method) over the pilot figure unless told otherwise.
+  **Known bug worked around**: `powerlaw==2.0.0`'s `fit.power_law.KS()` calls an
+  undefined name internally; `fit.power_law.D` holds the same statistic and works.
+
+  **Did we prove scale-free structure? Nuanced yes, with the honest caveat stated.**
+  Cross-checked against Albert & Barabási (2002) directly: their definition (p.63) is
+  simply "degree distribution follows a power law P(k)~k^-γ" and their own Table II
+  reports real-network exponents mostly in the 2–3 range (Internet domain-level
+  γ=2.1–2.2, WWW γ≈2.1–2.7) — our γ_out=2.148, γ_in=1.853 sit squarely in that band, but
+  their 2002 methodology is essentially eyeballing log-log straight lines, which predates
+  Clauset–Shalizi–Newman (2009)'s rigorous test that `powerlaw` implements.
+  Ran CSN's own recommended step — comparing the power-law fit against plausible
+  alternative heavy-tailed distributions via likelihood-ratio test
+  (`fit.distribution_compare`), not just fitting alone:
+  - power law **beats exponential** decisively (out: R=102.8, p=8e-5; in: R=695.8,
+    p=3e-20) — confirms a genuine heavy tail, not memoryless/random-graph-like degrees.
+  - power law **loses to truncated power law, lognormal, and stretched exponential**
+    (all R<0, all p<0.05, both in- and out-degree) — a pure, unbounded power law is
+    **not** the best-fitting model; a power law with a finite-size cutoff fits better.
+  **Honest thesis claim**: the degree distribution is heavy-tailed and its exponent is
+  consistent with the scale-free literature's typical range, but a rigorous test rejects
+  a *pure* power law in favor of a truncated one — report it as "heavy-tailed,
+  scale-free-like with a finite-size cutoff," not an unqualified "scale-free network."
+  This is the more defensible, modern claim (a strength, not a weakness, of doing the
+  CSN test at all — most informal "scale-free" claims in older literature skip it).
 - Per-run experiment results (method, source, k, IS/OOS σ, stop_reason, hop_mix,
   final_max_hop, best_hits per heuristic/hop, neutral_moves per heuristic) → TBD CSV
 - Tie-frequency and tie-break-variance measurements (§3) → TBD CSV
@@ -132,8 +184,7 @@ family's tally, not a shared score.
 hash every solution (assignment) and skip the reward if it's been seen before, even if it
 would otherwise qualify for σ2/σ3. For us, "solution" = the cut `D`; hashing
 `frozenset(D)` and keeping a visited-set for the run is cheap (max_iter is O(100s–1000s))
-and is required for literal fidelity. **Decision needed: implement this or skip it —
-flagged in §6.**
+and is required for literal fidelity. **Decided: implemented**, for literal R&P fidelity.
 Note: neither σ2 nor σ3 covers an exact tie (Δ=0 vs. current solution) — R&P's own
 categories imply a Δ=0 move scores 0 by omission, which is exactly the pilot's own
 Δ=0-accepted-reward-0 rule (§18 of PILOT_TESTS). Not a pilot workaround — it's what a
@@ -174,7 +225,7 @@ already a faithful port of this exact technique.
 in terms of the PDPTW's continuous distance matrix (`maxN = η · max_{i,j} d_ij`) and has
 no direct analog for discrete edge-selection heuristics; not needed here.
 
-## 7a. Where our heuristic portfolio doesn't map cleanly onto R&P — needs a decision
+## 7a. Where our heuristic portfolio doesn't map cleanly onto R&P — decided
 
 R&P's insertion (repair) heuristics are themselves deterministic, greedy procedures
 operating on continuous real-valued costs (distances/times), where exact ties are
@@ -222,6 +273,63 @@ representation needed later (spectral heuristic) is derived via igraph's own
 called every time the graph is constructed (not just once during Phase 1 testing) and
 raises immediately if `list(g.vs["name"]) != node_ids`. This converts "a bug we know how
 to avoid" into "the code refuses to run if it's ever violated."
+
+## 8b. Heuristics use full-graph metrics, never SAA/MC scenario-derived metrics — why
+
+User's own reasoning, confirmed correct and already how the architecture is built (§8):
+scoring candidate edges using a metric derived from the SAA or MC frozen scenarios
+themselves (e.g. "how often does this edge appear in a scenario where the source's reach
+is large") would let the *same* sampling noise leak into both the optimization objective
+(SAA fitness) and the candidate-selection heuristic — compounding overfitting risk rather
+than the two being independent checks on each other. All six heuristics (random,
+probability, degree-sum, Granovetter bridge, betweenness-from-source, spectral) are
+computed once from the **base graph** in `analyse_graph.py`, before any scenario is
+generated, and never touch a scenario subgraph. `probability` uses the edge's own fixed
+IC parameter, not a scenario-realized outcome. This is the academically defensible
+position and should be stated explicitly in the methodology (thesis section 4.2 or a new
+short subsection before it): heuristics operate on stable structural facts about G;
+**only** the fitness function operates on frozen scenarios, and even there, in-sample
+(search) and out-of-sample (reported result) are kept structurally separate (§7).
+
+**Where scenario-subgraph analysis itself belongs — decided.** Current thesis structure
+(unchanged, confirmed): 1 Topologija, 2 Analiza Bitcoin Alpha, 3 Formulacija SS-IMER,
+4 Heuristike za odabir bridova, 5 Metodologija ALNS (5.1 Arhitektura, 5.2 Operatori,
+**5.3 Fitness funkcija**), 6 Greedy metoda za usporedbu, 7 Rezultati i rasprava.
+§5.3 gets only a brief methodological mention of why SAA is used (avoiding the
+scenario-derived-heuristic overfitting risk, §8b above) — not the empirical comparison
+itself. The full SAA **and** MC vs. full-graph comparison (edge retention, density,
+whether giant-component structure survives a single percolation draw) live **together**
+as the first subsection of Chapter 7, "Evaluacija rezultata" — validating the measurement
+methodology before the actual ALNS-vs-baseline findings that follow it. Deferred until
+`create_subgraphs.py` is built — not urgent, but flagged so it isn't forgotten (PLAN.md
+Phase 1).
+
+## 8c. Level-2 hypothesis — corrected framing (supersedes the original phrasing)
+
+Original framing ("edges directly out of `s` sometimes lead to dead ends, so the real
+bottleneck can be several hops away") doesn't hold up: if the danger routes through
+exactly **one** hop0 edge and the rest are dead ends, that's still a hop0-solvable
+problem — a hop0-only greedy method (or even exhaustive enumeration, since out(s) is
+usually small) can identify and cut that single edge. That scenario isn't evidence for
+needing to search beyond hop0 at all.
+
+**Corrected scenario**: the real case for going beyond hop0 is **redundancy**, not
+distance per se. When `s` has *multiple* hop0 edges that all lead (independently) toward
+the same dangerous, well-connected region, no single hop0 removal suffices — under a
+limited budget k smaller than that redundant fan-out, hop0-only methods can't close all
+the parallel gateways. If those redundant paths **converge** onto a narrower shared
+choke point one or more hops downstream (e.g. several hop0 neighbors all feed into the
+same hub via a small number of shared uplink edges), removing that shared downstream
+choke point is far more budget-efficient than trying to sever every redundant hop0 path
+individually. This is structurally a min-cut argument: sometimes the narrowest s–(danger)
+cut just isn't at the edges touching `s`.
+
+This isn't new speculation — it matches a real prior observation in PILOT_TESTS.md §23:
+source 2765, k=3 was the "canonical choke case," where a cut at hop≥1 (uplink edges into
+a mega-hub) beat hop0 quarantine. That's exactly this pattern, not "hop0 is all dead
+ends." Use this framing (redundant convergent paths + a downstream choke point) as the
+motivating example in the Introduction and in the Level-2 discussion, replacing the
+"dead end" framing.
 
 ## 9a. Duplicate edges in the raw data
 

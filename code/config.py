@@ -25,3 +25,10 @@ RAW_DATASET_COLUMNS = ["source", "target", "rating", "time"]
 # one probability is required for SS-IMER, so duplicates must be resolved.
 # See REPORT.md §9a. "latest" keeps the row with the largest `time` value.
 DUPLICATE_EDGE_POLICY = "latest"  # one of: "latest"
+
+# --- analyse_graph.py ----------------------------------------------------
+
+# igraph delegates its RNG to Python's `random` module by default, so seeding this
+# before a stochastic call (Erdos-Renyi null model, Louvain) makes it reproducible.
+ER_NULL_MODEL_SEED = 1
+LOUVAIN_RESTART_SEEDS = range(1, 21)  # best-of-20, PILOT_TESTS.md §36

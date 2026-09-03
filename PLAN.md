@@ -26,17 +26,17 @@ both); single **config module** as the only place literals/seeds live.
       reproduces PILOT_TESTS.md §12 numbers exactly (REPORT.md §5).
       **Caught and fixed a real bug**: the skeleton's `code/operator.py` shadowed
       Python's stdlib `operator` module and broke every import; renamed to `operators.py`.
-- [ ] **`analyse_graph.py`** — two jobs, both write to CSV, nothing printed-only:
-  - Topology chapter numbers: N, M, mean/median/std p; path length + clustering vs.
-    directed ER null model; degree distribution power-law fit (Clauset–Shalizi–Newman
-    MLE + KS, not just κ); spectral threshold `λc = 1/λmax`; bow-tie decomposition;
-    k-core; Louvain (seeded, best-of-N restarts, report best + range) — descriptive
-    only, see REPORT.md §2; assortativity.
-  - Precomputed heuristic feature tables (REPORT.md §8) — global (degree-sum,
-    Granovetter local-bridge flag, index-aligned spectral eigenvector components) and,
-    per source, on demand at the start of that source's run (betweenness-from-source,
-    hop-distance-from-source, reachable-from-`s` edge set). Cache per-source results —
-    computed once, reused across every k/method/ALNS iteration for that source.
+- [x] **`analyse_graph.py`** — both jobs done, output written to CSV
+      (`data/topology_summary.csv`, `data/edge_features.csv`):
+  - Topology chapter numbers, smoke-tested against pilot's known numbers (REPORT.md §5)
+    — exact match on path length/clustering vs. ER, spectral threshold, bow-tie, k-core,
+    assortativity, Granovetter bridges; Louvain close but not identical (expected,
+    stochastic algorithm); **power-law γ/xmin doesn't match pilot's number and is
+    flagged unresolved in REPORT.md §5 — trusting this run's principled CSN fit.**
+  - Global features (degree-sum, Granovetter bridge, index-aligned spectral score) and
+    a per-source function (`source_features`) giving hop-distance + source-rooted
+    betweenness from a single shared BFS pass — not yet called by anything downstream,
+    that happens when `create_subgraphs.py`/`operators.py` need it.
 - [ ] **`heuristics.py`** — the Strategy layer, consuming precomputed features only,
       never touching the graph directly. One score table per heuristic (random,
       probability, degree, bridge, betweenness, spectral). Shared
@@ -107,6 +107,16 @@ both); single **config module** as the only place literals/seeds live.
       sizes per heuristic per selection event; run a small fixed number of ALNS seeds per
       (source, k) and record the σ/R spread across seeds. Document, do not average away.
 - [ ] OOS validation pass on best cuts found.
+
+## Chapter 1-2 figures (out of phase order — done early, thesis needed them now)
+
+- [x] `code/make_topology_figures.py` → `figures/`: ER/WS/BA comparison (Ch1),
+      out-degree CCDF with power-law fit (Ch2 — visually shows the tail falling below
+      the fit, supporting the truncated-power-law finding in REPORT.md §5), probability
+      distribution bar chart (Ch2), bow-tie diagram drawn as an actual three-lobe
+      IN→SCC→OUT shape with directional arrows (not just a bar) — sized with a minimum-
+      radius floor since SCC's 86.7% dominance would otherwise shrink IN/periphery to
+      invisible dots; exact counts always labeled regardless of drawn size.
 
 ## Phase 3 — Figures & report
 
