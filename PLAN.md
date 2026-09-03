@@ -37,36 +37,46 @@ both); single **config module** as the only place literals/seeds live.
     a per-source function (`source_features`) giving hop-distance + source-rooted
     betweenness from a single shared BFS pass — not yet called by anything downstream,
     that happens when `create_subgraphs.py`/`operators.py` need it.
-- [ ] **`heuristics.py`** — the Strategy layer, consuming precomputed features only,
-      never touching the graph directly. One score table per heuristic (random,
-      probability, degree, bridge, betweenness, spectral). Shared
-      `topk(edges, scores: dict, k, rng=None)`:
-      `rng=None` → deterministic `(score desc, u asc, v asc)`;
-      `rng=<Random>` → shuffle within tied score groups first. This is the one function
-      both `greedy_baseline.py` and `operators.py` call — see REPORT.md §3.
-      Also compute and log tie-group-size stats here (feeds REPORT.md §3/§5).
-- [ ] **`create_subgraphs.py`** — builds frozen live-edge scenario subgraphs (bond
-      percolation: each edge kept independently with probability `p`), **not** hop-layer
-      candidates (see REPORT.md §7). Produces two disjoint, separately seeded, immutable
-      sets: in-sample (SAA) and out-of-sample (Monte Carlo). Nothing downstream mutates
-      these — always operate on a copy/mask.
-- [ ] **`fitness_evaluator.py`** — SAA evaluation only: given a candidate cut `D` and the
-      frozen in-sample scenarios, compute mean reach via masked directed BFS from `s`
-      over a **copy**. Does not generate scenarios (that's `create_subgraphs.py`) and
-      does not touch the out-of-sample set.
-- [ ] **`oos_evaluator.py`** *(new file)* — out-of-sample Monte Carlo evaluation of final/
-      best cuts only, using the frozen OOS scenario set. Never called from inside the
-      ALNS loop — keeps the search objective (SAA) and the reported result (OOS)
-      structurally separate.
+- [x] **`heuristics.py`** — the Strategy layer, consuming precomputed features only,
+      never touching the graph directly. `edge_scores` for the six heuristics;
+      `rank`/`pick_biased`/`select_q`/`topk` implement the shared selection mechanism
+      (REPORT.md §3/§7a — R&P's y^p rank-biased sampling with a tie-shuffle pre-step,
+      not a separate "shuffle only" mechanism). Two more helpers added once
+      `operators.py` actually needed them (not guessed in advance): `active_pool`
+      (turns `edges_by_hop` + the loop's `active_max_hop` into a candidate list) and
+      `build_edge_meta` (per-edge source/target/probability/hop, for
+      `destroy_related`'s relatedness measure). `tie_group_sizes` diagnostic not yet
+      wired into a hot path — that's a Phase 2 measurement task.
+- [x] **`create_subgraphs.py`** — builds frozen live-edge scenario subgraphs as boolean
+      occupancy masks over edge ids (not rebuilt adjacency lists — reuses one shared
+      base adjacency, REPORT.md §7), **not** hop-layer candidates. Two disjoint,
+      separately seeded sets: in-sample (SAA, 500 scenarios) and out-of-sample (MC,
+      2000 scenarios) — counts taken directly from the thesis's own Ch.4 text, not
+      invented. Nothing downstream mutates these.
+- [x] **`evaluator.py`** — one function, `evaluate_reach(source, D, base_adj,
+      scenarios)`: masked BFS reach given a candidate cut `D`, over whatever scenario
+      array is passed in. Does not generate scenarios (`create_subgraphs.py`). Used
+      for both SAA (inside the ALNS loop) and OOS (final validation only) — no
+      separate `oos_evaluator.py` file (removed: it was a 2-line re-export, no actual
+      enforcement beyond what passing the right array already gives). The separation
+      is structural — callers only ever hold a reference to one scenario set at a
+      time — not a second file.
 - [ ] **`greedy_baseline.py`** — one baseline per heuristic, hop0-only candidates
       (edges directly incident to `s`), deterministic `topk` path. No ALNS-specific
       logic here at all. This restriction is the whole point of the baseline — it's
       what ALNS is being compared against, see REPORT.md §7 on the Level-2 reframing.
-- [ ] **`operators.py`** — destroy operators (random / worst-by-SAA-cost / related-Shaw)
-      and repair operators (the six `heuristics.py` scorers) as two independently
-      weighted families, drawing from whatever active hop-windowed candidate pool
-      `alns_optimizer.py` currently exposes (operators don't own or compute the horizon
-      themselves — see REPORT.md §7). Repair uses the seeded-random `topk` path.
+- [x] **`operators.py`** — destroy (random / worst / related-Shaw) and repair (the six
+      `heuristics.py` scorers) as two independently weighted families, drawing from
+      whatever active hop-windowed candidate pool `alns_optimizer.py` exposes via
+      `heuristics.active_pool` (operators don't own or compute the horizon themselves
+      — REPORT.md §7). `destroy_worst` and `destroy_related` grounded directly in R&P
+      (2006) §3.1 (re-read before writing, not from memory) — see REPORT.md §6a for
+      their actual tuned parameter vector (σ1=33, σ2=9, σ3=13, r=0.1, w=0.05,
+      c=0.99975, p_worst=3, p_Shaw=6 — starting points, not invented). Shaw-relatedness
+      weighting (shared tail/head/hop/probability, equal-weighted) is a genuinely
+      uncalibrated placeholder, flagged for Phase 2. `destroy_worst` and the main loop
+      share `evaluator.py`'s optional cache (keyed by `frozenset(D)`) — doubles as
+      R&P's required visited-solution tracking and a real memoization win.
 - [ ] **`alns_optimizer.py`** — adaptive weight update (σ1/σ2/σ3 reward, Δ=0 accepted but
       rewarded 0, tracked separately as `neutral_moves`), SA acceptance with geometric
       cooling, and hop-horizon state: `active_max_hop` starts at hop0∪hop1, expands per

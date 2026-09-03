@@ -47,9 +47,9 @@ code/
                         baselines and ALNS
   create_subgraphs.py   frozen live-edge scenario subgraphs (SAA in-sample + Monte
                         Carlo out-of-sample), generated once, immutable afterwards
-  fitness_evaluator.py  SAA reach evaluation only, against the frozen in-sample set
-  oos_evaluator.py       out-of-sample Monte Carlo evaluation of final/best cuts only,
-                        never called during optimization
+  evaluator.py          masked-BFS reach evaluation; one function used for both SAA
+                        (inside the ALNS loop) and OOS (final validation only),
+                        never both at once — see README's structure notes in REPORT.md
   greedy_baseline.py     hop0-only baselines, one per heuristic
   operators.py             ALNS destroy/repair operators (two independent families),
                         operating on the hop-windowed active candidate pool

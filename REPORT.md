@@ -221,6 +221,33 @@ removal is literally Shaw removal with `p = 1` (implemented separately for speed
 R&P). This confirms pilot's own `floor(y**p * n)` mechanism (§32 of PILOT_TESTS) was
 already a faithful port of this exact technique.
 
+**R&P's own tuned parameter vector (§4.3.1-4.3.2)**, found by re-reading the paper before
+writing `operators.py`/`alns_optimizer.py` rather than guessing: after their own
+trial-and-error + one-parameter-at-a-time tuning process, R&P report
+`(φ,χ,ψ,ω,p,p_worst,w,c,σ1,σ2,σ3,r,η,ξ) = (9,3,2,5,6,3,0.05,0.99975,33,9,13,0.1,0.025,0.4)`.
+Relevant to us directly: **σ1=33, σ2=9, σ3=13** (this is where pilot's inherited numbers
+actually came from — not arbitrary, confirmed against the primary source now), **r=0.1**
+(reaction factor), **w=0.05** (start-temperature control parameter), **c=0.99975**
+(cooling rate per iteration), **p_worst=3, p_Shaw=6** (destroy determinism exponents —
+also matches pilot's `floor(y**p*n)` notes exactly). Stopping criterion: 25000 LNS
+iterations, chosen for a time/quality tradeoff on their (much larger) VRP instances —
+not directly transferable to us, see below. These are **starting points to recalibrate
+on our own problem** (PLAN.md Phase 2), not final values — but grounded starting points,
+not invented ones.
+
+**q-bounds — literal R&P formula does not scale to our k, kept pilot's adapted version
+deliberately, not by oversight.** R&P define ρ (their q) as a random integer with
+`4 ≤ ρ ≤ min(100, ξ·n)`, where n is the instance's total request count (in the
+hundreds for their VRP instances). Applied literally to us — where `n` would be `k`,
+since D is a fixed-size solution the same way their route-assignment is — the fixed
+lower bound of 4 **breaks for small k** (e.g. k=3 in the canonical smoke case from
+PILOT_TESTS §16: 4 ≤ q is impossible when |D|=3). Kept the pilot's scaled version
+instead: `q_min = max(1, floor(0.1k))`, `q_max = min(k-1, floor(0.4k))` — proportional
+to k rather than a fixed floor, always leaves at least one element of D fixed
+(`q_max < k`), always changes at least one (`q_min ≥ 1`). This is a justified departure
+from literal R&P, not an unexamined inheritance — R&P's own formula is undefined for
+problem sizes as small as ours.
+
 **Explicitly not ported**: the noise term added to insertion costs (§3.6) — it's defined
 in terms of the PDPTW's continuous distance matrix (`maxN = η · max_{i,j} d_ij`) and has
 no direct analog for discrete edge-selection heuristics; not needed here.
@@ -363,13 +390,16 @@ needs one probability per directed edge. **Default: keep the most recent rating 
   are generated once and then treated as immutable: an in-sample (SAA) set and an
   out-of-sample (Monte Carlo) set. Nothing downstream is allowed to mutate them —
   evaluation always works on a copy/mask, never on the frozen scenario objects directly.
-- **`fitness_evaluator.py` only evaluates SAA** — given a candidate cut `D` and the
-  frozen in-sample scenario set, compute mean reach via masked BFS from `s`. It does not
-  generate scenarios.
-- **A separate module evaluates out-of-sample Monte Carlo** — new file
-  `oos_evaluator.py`, used only for final/best-cut validation after optimization, never
-  inside the ALNS loop. Keeps "search objective" (SAA) and "reported result" (OOS)
-  structurally separate so there's no risk of accidentally optimizing against OOS data.
+- **`evaluator.py` has one function, `evaluate_reach`** — given a candidate
+  cut `D`, a scenario array, and the shared base adjacency, computes mean reach via
+  masked BFS from `s`. It does not generate scenarios. Used for **both** SAA (inside
+  the ALNS loop) and OOS (final validation only) by passing a different scenario
+  array — **no separate `oos_evaluator.py` file** (removed after a second look: it was
+  a 2-line re-export with no actual enforcement beyond what correctly passing the
+  right array already gives — the file split was indirection the safety property
+  didn't need). The SAA/OOS separation is structural in the sense that matters: only
+  the orchestration code (not yet written) holds a reference to `mc_scenarios`, and
+  the ALNS loop is only ever constructed with `saa_scenarios` — never both.
 - **Hop-layer candidate windowing is kept, but it isn't a standalone script.**
   Hop-distance-from-source is a precomputed, per-source feature (`analyse_graph.py`,
   §8) — an edge's layer = BFS distance of its tail from `s`. The *state* that changes

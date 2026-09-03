@@ -32,3 +32,16 @@ DUPLICATE_EDGE_POLICY = "latest"  # one of: "latest"
 # before a stochastic call (Erdos-Renyi null model, Louvain) makes it reproducible.
 ER_NULL_MODEL_SEED = 1
 LOUVAIN_RESTART_SEEDS = range(1, 21)  # best-of-20, PILOT_TESTS.md §36
+
+# --- create_subgraphs.py (frozen live-edge scenarios, REPORT.md §7) ------
+
+SAA_SCENARIO_COUNT = 500  # thesis Ch.4 "Fitness funkcija" text, already decided
+SAA_SCENARIO_SEED = 42
+MC_SCENARIO_COUNT = 2000  # thesis Ch.4: "2000 neovisnih MC scenarija" for OOS validation
+MC_SCENARIO_SEED = 999  # must differ from SAA_SCENARIO_SEED - in-sample/OOS independence
+
+# --- operators.py: destroy-side determinism exponents (R&P 2006 tuned vector, §4.3.2 -
+# their (p, p_worst) = (6, 3); starting points, to recalibrate on our problem later) --
+
+DESTROY_WORST_P = 3
+DESTROY_SHAW_P = 6
