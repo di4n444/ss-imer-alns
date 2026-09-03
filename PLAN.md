@@ -37,62 +37,61 @@ both); single **config module** as the only place literals/seeds live.
     a per-source function (`source_features`) giving hop-distance + source-rooted
     betweenness from a single shared BFS pass — not yet called by anything downstream,
     that happens when `create_subgraphs.py`/`operators.py` need it.
-- [x] **`heuristics.py`** — the Strategy layer, consuming precomputed features only,
-      never touching the graph directly. `edge_scores` for the six heuristics;
-      `rank`/`pick_biased`/`select_q`/`topk` implement the shared selection mechanism
-      (REPORT.md §3/§7a — R&P's y^p rank-biased sampling with a tie-shuffle pre-step,
-      not a separate "shuffle only" mechanism). Two more helpers added once
-      `operators.py` actually needed them (not guessed in advance): `active_pool`
-      (turns `edges_by_hop` + the loop's `active_max_hop` into a candidate list) and
-      `build_edge_meta` (per-edge source/target/probability/hop, for
-      `destroy_related`'s relatedness measure). `tie_group_sizes` diagnostic not yet
-      wired into a hot path — that's a Phase 2 measurement task.
-- [x] **`create_subgraphs.py`** — builds frozen live-edge scenario subgraphs as boolean
-      occupancy masks over edge ids (not rebuilt adjacency lists — reuses one shared
-      base adjacency, REPORT.md §7), **not** hop-layer candidates. Two disjoint,
-      separately seeded sets: in-sample (SAA, 500 scenarios) and out-of-sample (MC,
-      2000 scenarios) — counts taken directly from the thesis's own Ch.4 text, not
-      invented. Nothing downstream mutates these.
-- [x] **`evaluator.py`** — one function, `evaluate_reach(source, D, base_adj,
-      scenarios)`: masked BFS reach given a candidate cut `D`, over whatever scenario
-      array is passed in. Does not generate scenarios (`create_subgraphs.py`). Used
-      for both SAA (inside the ALNS loop) and OOS (final validation only) — no
-      separate `oos_evaluator.py` file (removed: it was a 2-line re-export, no actual
-      enforcement beyond what passing the right array already gives). The separation
-      is structural — callers only ever hold a reference to one scenario set at a
-      time — not a second file.
+- [x] **`heuristics.py`** — the Strategy layer, reading only precomputed tables.
+      `edge_scores` for the six heuristics (plain dict lookups — the earlier pandas
+      `.loc`-per-edge version was microseconds *per candidate* on pools of thousands);
+      `rank`/`biased_index`/`select_q`/`topk` are the one shared selection mechanism
+      (REPORT.md §3/§7a). `active_pool` turns the loop's `active_max_hop` into a
+      candidate list. `tie_group_sizes` diagnostic is written but not yet wired into a
+      run — that is a Phase 2 measurement task.
+- [x] **`create_subgraphs.py`** — frozen live-edge scenarios as plain-Python adjacency
+      lists (`list[list[int]]`, targets only, occupancy baked in at generation time so
+      the BFS never re-checks it — PILOT_TESTS.md §24). numpy still does the vectorised
+      coin flips; only the structure the hot loop consumes is plain Python. Two
+      disjoint, separately seeded sets: SAA (500) and MC (2000), counts taken from the
+      thesis's own Ch.4 text. Nothing downstream mutates these.
 - [ ] **`greedy_baseline.py`** — one baseline per heuristic, hop0-only candidates
       (edges directly incident to `s`), deterministic `topk` path. No ALNS-specific
       logic here at all. This restriction is the whole point of the baseline — it's
       what ALNS is being compared against, see REPORT.md §7 on the Level-2 reframing.
 - [x] **`operators.py`** — destroy (random / worst / related-Shaw) and repair (the six
-      `heuristics.py` scorers) as two independently weighted families, drawing from
-      whatever active hop-windowed candidate pool `alns_optimizer.py` exposes via
-      `heuristics.active_pool` (operators don't own or compute the horizon themselves
-      — REPORT.md §7). `destroy_worst` and `destroy_related` grounded directly in R&P
-      (2006) §3.1 (re-read before writing, not from memory) — see REPORT.md §6a for
-      their actual tuned parameter vector (σ1=33, σ2=9, σ3=13, r=0.1, w=0.05,
-      c=0.99975, p_worst=3, p_Shaw=6 — starting points, not invented). Shaw-relatedness
-      weighting (shared tail/head/hop/probability, equal-weighted) is a genuinely
-      uncalibrated placeholder, flagged for Phase 2. `destroy_worst` and the main loop
-      share `evaluator.py`'s optional cache (keyed by `frozenset(D)`) — doubles as
-      R&P's required visited-solution tracking and a real memoization win.
-- [ ] **`alns_optimizer.py`** — adaptive weight update (σ1/σ2/σ3 reward, Δ=0 accepted but
-      rewarded 0, tracked separately as `neutral_moves`), SA acceptance with geometric
-      cooling, and hop-horizon state: `active_max_hop` starts at hop0∪hop1, expands per
-      segment when the outer layer's average reward is positive, using the precomputed
-      hop-distance feature to build each segment's active pool. Because this is a real
-      adaptive-learning claim (not just a descriptive stat), log per segment:
-      `active_max_hop`, per-layer/per-heuristic weights, `best_hits` by hop — and
-      implement (or explicitly justify skipping) a **contraction** rule, since pilot's
-      expansion-only horizon was flagged as unvalidated (REPORT.md §6/§10, pilot §33).
-      Explicit `stop_reason` ∈ {max_iter, stagnation, isolated/hard-error}.
+      scorers) as two independently weighted families with one uniform signature each,
+      dispatched through `DESTROY_REGISTRY` instead of kwargs plumbing. Grounded in
+      R&P §3.1 with their tuned exponents (p_worst=3, p_Shaw=6). `destroy_worst` uses
+      `Evaluator.marginal_values`, which was the single biggest performance fix in the
+      project (REPORT.md §11). Shaw relatedness weighting stays an uncalibrated
+      placeholder, flagged for Phase 2.
+- [x] **`source_context.py`** *(new)* — `SourceContext`, the Parameter Object holding
+      everything precomputed once per source. Without it `run_alns` and every operator
+      need 8-9 loose arguments. Also `verify_feature_alignment`, the counterpart to
+      `create_graph.verify_vertex_alignment`: it caught a real bug where endpoints were
+      being read as SNAP IDs from the CSV while scenarios and the stamp array are
+      indexed by internal igraph vertex index (REPORT.md §4/§8a's bug class, live).
+- [x] **`evaluator.py`** — `Evaluator` class (state that must persist across thousands
+      of calls: stamp arrays, reused cut buffer, fitness and marginal caches). Bound to
+      one scenario set for its lifetime, which is what makes the SAA/OOS boundary
+      structural. See REPORT.md §11 for the cost model and the four optimisations.
+- [x] **`test_evaluator.py`** *(new)* — regression tests pinning the objective function
+      against an independent igraph oracle, plus one-pass marginals vs naive,
+      monotonicity, buffer cleanliness and cache transparency.
+- [x] **`alns_optimizer.py`** — roulette-wheel selection over *three* weight books
+      (destroy, repair, hop scope), R&P's σ1/σ2/σ3 scoring with the "only reward
+      unvisited solutions" rule, segment-end weight update, SA acceptance with a
+      calibrated start temperature. Δ=0 is accepted but scores nothing, counted as
+      `neutral_moves` (PILOT_TESTS.md §18's bug, fixed by construction). Logs both
+      weight books plus `scope_weights` and `best_reach` per segment.
+      **The expanding hop horizon was removed**: measured at 1/8 optimal with gaps up
+      to 495% on enumerable instances, versus 8/8 optimal with the horizon held at
+      hop0. Replaced by the hop-scope roulette wheel — 4/4 optimal, and it learns that
+      hop0 pays most rather than being told. Full diagnosis in REPORT.md §12.
+      `fixed_hop_scope=` pins a single layer, which is the Level-2 ablation.
 - [ ] **`run_experiment.py`** — config-driven orchestration; one CSV row per
       (source, k, method) run; never a column that puts ALNS in its own comparison pool.
 - [ ] **Smoke tests** (small, run before Phase 2 starts):
   - [ ] Reproduce topology numbers once and freeze them into REPORT.md §5.
   - [ ] One source/k run per method family, confirm CSV schema is complete and stable.
-  - [ ] Confirm `k ≥ out(s)` behaves as the decided hard error (REPORT.md §4).
+  - [x] `k ≥ out(s)` handled as the trivial isolated case, not an error: warm start
+        cuts all of hop0, sigma=1, `stop_reason="isolated"`, 0 iterations (REPORT.md §13).
   - [ ] Confirm spectral score index alignment (REPORT.md §4/§6) — check against a
         hand-computable small case if possible.
   - [ ] Confirm frozen scenarios are byte-for-byte reproducible given a seed, and that
@@ -116,6 +115,13 @@ both); single **config module** as the only place literals/seeds live.
 - [ ] Tie-frequency + tie-break-variance measurement pass (REPORT.md §3): log tie-group
       sizes per heuristic per selection event; run a small fixed number of ALNS seeds per
       (source, k) and record the σ/R spread across seeds. Document, do not average away.
+- [ ] **Do the greedy baselines also find the enumerated optimum?** On sources small
+      enough to brute-force (out-degree ≤ 10 ⇒ C(out,k) ≤ ~200 hop0 cuts), compare each
+      hop0 baseline against the exhaustive optimum, the same way ALNS was checked in
+      REPORT.md §12. This says whether a baseline's weakness is the *heuristic* or the
+      *search* — and if a simple deterministic rule already hits the optimum on small
+      instances, that bounds what ALNS can claim there. Not to be run until the ALNS
+      side is settled.
 - [ ] OOS validation pass on best cuts found.
 
 ## Chapter 1-2 figures (out of phase order — done early, thesis needed them now)

@@ -1,8 +1,16 @@
-"""Strategy layer: six edge-scoring heuristics, consumed identically by greedy
-baselines and ALNS operators (REPORT.md §2). Scores are precomputed lookups only —
-no graph traversal here (REPORT.md §8). Also the shared selection mechanism used by
-both callers: deterministic top-k for baselines, R&P's rank-biased y^p sampling
-(with a tie-shuffle pre-step) for ALNS operators (REPORT.md §3, §7a).
+"""Strategy layer: the six edge-scoring heuristics, plus the one selection mechanism
+shared by greedy baselines and ALNS operators.
+
+Scores are O(1) dict lookups into `SourceContext`'s precomputed tables — no graph
+traversal and no pandas indexing in the hot path (REPORT.md §8).
+
+Selection has exactly two modes, and they must never drift apart (REPORT.md §3/§7a):
+  - baselines are a deterministic *rule*   -> `topk(..., rng=None)`
+  - ALNS operators are a *sampler*         -> `select_q(..., rng=<seeded Random>)`
+The sampler is R&P (2006) Algorithm 2/3's y^p rank-biased draw, on a ranking whose
+tied groups have been shuffled first — the tie-shuffle is our addition, because
+several of our heuristics are heavily tied (bridge is binary, probability takes 10
+values) where R&P's continuous VRP costs essentially never tie.
 """
 
 import random
@@ -13,118 +21,84 @@ from config import DATA_DIR
 
 HEURISTICS = ["random", "probability", "degree", "bridge", "betweenness", "spectral"]
 
+# heuristic name -> the SourceContext table it reads. "random" is special-cased.
+_SCORE_TABLE = {
+    "probability": "probability",
+    "degree": "degree_sum",
+    "bridge": "is_bridge",
+    "betweenness": "betweenness",
+    "spectral": "spectral",
+}
+
 
 def load_global_features() -> pd.DataFrame:
-    """Static, source-independent features computed once by analyse_graph.py."""
-    df = pd.read_csv(DATA_DIR / "edge_features.csv")
-    return df.set_index("edge_id")
+    """Static, source-independent edge features computed once by analyse_graph.py."""
+    return pd.read_csv(DATA_DIR / "edge_features.csv").set_index("edge_id")
 
 
-def endpoints_lookup(features: pd.DataFrame) -> dict:
-    """edge_id -> (source, target), for the deterministic baseline tie-break."""
-    return {eid: (row.source, row.target) for eid, row in features.iterrows()}
-
-
-def active_pool(edges_by_hop: dict, max_hop: int, exclude: set = None) -> list:
-    """Union of edges_by_hop[0..max_hop] (analyse_graph.py's per-source feature),
-    optionally minus `exclude` (typically the current D). This is what turns the
-    ALNS loop's `active_max_hop` state into an actual candidate list — used by
-    `operators.py`'s repair (exclude=D) and `greedy_baseline.py` (max_hop=0, no
-    exclude needed since baselines don't grow a set)."""
-    pool = [eid for h in range(max_hop + 1) for eid in edges_by_hop.get(h, [])]
-    if exclude:
-        pool = [eid for eid in pool if eid not in exclude]
-    return pool
-
-
-def build_edge_meta(features: pd.DataFrame, hop_of_node: dict) -> dict:
-    """edge_id -> {source, target, probability, hop}, assembled from the global
-    features table plus one source's hop-distance feature. `hop` is the tail node's
-    hop level (None if unreachable from this source) — used by `destroy_related`'s
-    relatedness measure in operators.py."""
-    return {
-        eid: {
-            "source": row.source,
-            "target": row.target,
-            "probability": row.probability,
-            "hop": hop_of_node.get(row.source),
-        }
-        for eid, row in features.iterrows()
-    }
-
-
-def edge_scores(heuristic: str, features: pd.DataFrame, edge_ids, source_features=None,
-                 rng: random.Random = None) -> dict:
-    """{edge_id: score} for `heuristic`, restricted to `edge_ids`. Higher = more
-    preferred (both for "greedy picks this" and "operator biases toward this")."""
-    edge_ids = list(edge_ids)
+def edge_scores(heuristic: str, ctx, edge_ids, rng: random.Random = None) -> dict:
+    """{edge_id: score} for `heuristic` over `edge_ids`. Higher = more preferred,
+    uniformly for every heuristic, so callers never need to know the direction."""
     if heuristic == "random":
-        r = rng or random.Random()
-        return {eid: r.random() for eid in edge_ids}
-    if heuristic == "probability":
-        col = features["probability"]
-    elif heuristic == "degree":
-        col = features["degree_sum"]
-    elif heuristic == "bridge":
-        col = features["is_local_bridge"].astype(float)
-    elif heuristic == "spectral":
-        col = features["spectral_score"]
-    elif heuristic == "betweenness":
-        if source_features is None:
-            raise ValueError("betweenness heuristic requires source_features")
-        bc = source_features["betweenness"]
-        return {eid: bc.get(eid, 0.0) for eid in edge_ids}
-    else:
-        raise ValueError(f"unknown heuristic: {heuristic}")
-    return {eid: float(col.loc[eid]) for eid in edge_ids}
+        # No fall back to the global `random` module: every stochastic step must come
+        # from the run's own seeded Random so runs stay independently reproducible
+        # (PILOT_TESTS.md §35 R13).
+        if rng is None:
+            raise ValueError("the 'random' heuristic needs the run's seeded rng")
+        return {eid: rng.random() for eid in edge_ids}
+    try:
+        table = getattr(ctx, _SCORE_TABLE[heuristic])
+    except KeyError:
+        raise ValueError(f"unknown heuristic: {heuristic}") from None
+    return {eid: table.get(eid, 0.0) for eid in edge_ids}
 
 
 def rank(edge_ids, scores: dict, endpoints: dict, rng: random.Random = None) -> list:
-    """Sort edge_ids by (score desc, then u asc/v asc if rng is None — deterministic
-    baseline rule — else shuffled first, so Python's stable sort preserves random
-    order within tied-score groups — the ALNS operator sampler). REPORT.md §3/§7a."""
-    ids = list(edge_ids)
+    """Order candidates best-first.
+
+    `rng=None` is the deterministic baseline rule: score desc, then (u, v) ascending.
+    With an rng, a random second key breaks ties uniformly — equivalent to shuffling
+    before a stable sort, but one pass instead of two, and `random()` is far cheaper
+    than the `_randbelow` draws `random.shuffle` needs (profiling put that shuffle at
+    4% of total runtime, on pools of thousands once the hop horizon widens)."""
     if rng is None:
-        return sorted(ids, key=lambda e: (-scores[e], endpoints[e][0], endpoints[e][1]))
-    rng.shuffle(ids)
-    return sorted(ids, key=lambda e: -scores[e])
+        return sorted(edge_ids, key=lambda e: (-scores[e], endpoints[e][0], endpoints[e][1]))
+    draw = rng.random
+    return sorted(edge_ids, key=lambda e: (-scores[e], draw()))
 
 
-def pick_biased(ranked_ids: list, rng: random.Random, p: float):
-    """Rospke & Pisinger (2006) Algorithm 2/3: draw y~Uniform[0,1), return
-    ranked_ids[floor(y**p * len(ranked_ids))]. Larger p -> more greedy (biased toward
-    the top of the ranking); p -> 0 approaches uniform random choice. REPORT.md §6a."""
-    y = rng.random()
-    idx = min(int((y**p) * len(ranked_ids)), len(ranked_ids) - 1)
-    return ranked_ids[idx]
+def biased_index(n: int, rng: random.Random, p: float) -> int:
+    """R&P (2006) Algorithms 2/3: draw y~U[0,1), take index floor(y**p * n). Larger p
+    biases harder toward the top of the ranking; p=1 is a uniform draw. Single home
+    for the formula — both selection paths use it."""
+    return min(int((rng.random() ** p) * n), n - 1)
 
 
 def select_q(edge_ids, scores: dict, endpoints: dict, q: int, rng: random.Random,
              p: float) -> list:
-    """Iteratively pick q edges via the rank-biased mechanism above, one at a time
-    (matching R&P's Algorithms 2/3 loop structure) — used by ALNS destroy/repair."""
-    remaining = list(edge_ids)
-    chosen = []
-    for _ in range(q):
-        if not remaining:
-            break
-        ranked = rank(remaining, scores, endpoints, rng=rng)
-        pick = pick_biased(ranked, rng, p)
-        chosen.append(pick)
-        remaining.remove(pick)
-    return chosen
+    """Pick q edges by repeated rank-biased draws from one ranking.
+
+    The ranking is built once, not per pick. Every caller here scores *statically*
+    (repair heuristics; worst-removal marginal values), so the order between picks
+    only ever loses the item just taken — re-sorting the whole pool each time cost
+    O(q · n log n) for no behavioural gain, and the pool reaches thousands of edges
+    once the hop horizon widens. R&P's Shaw removal genuinely must re-rank, because
+    its relatedness is measured against the growing chosen set; that one keeps its own
+    dynamic loop in operators.py."""
+    ranked = rank(edge_ids, scores, endpoints, rng=rng)
+    return [ranked.pop(biased_index(len(ranked), rng, p))
+            for _ in range(min(q, len(ranked)))]
 
 
 def topk(edge_ids, scores: dict, endpoints: dict, k: int, rng: random.Random = None) -> list:
-    """Batch top-k: deterministic for baselines (rng=None), tie-shuffled otherwise."""
+    """Batch top-k: the deterministic baseline path when rng is None."""
     return rank(edge_ids, scores, endpoints, rng=rng)[:k]
 
 
 def tie_group_sizes(edge_ids, scores: dict) -> list:
-    """Diagnostic: sizes of groups sharing an identical score, for REPORT.md §3's
-    tie-frequency reporting requirement. Not wired into the hot path — call
-    separately when logging."""
+    """Diagnostic for REPORT.md §3's tie-frequency reporting requirement: sizes of
+    groups sharing an identical score, largest first. Called from measurement code,
+    never from the hot path."""
     from collections import Counter
 
-    counts = Counter(scores[e] for e in edge_ids)
-    return sorted(counts.values(), reverse=True)
+    return sorted(Counter(scores[e] for e in edge_ids).values(), reverse=True)

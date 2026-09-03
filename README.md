@@ -37,27 +37,28 @@ only; rating mapped to an IC transmission probability via a sigmoid.
 
 ```
 code/
-  config.py            single source of parameters, seeds, and constants
-  create_graph.py      load + build the directed IC graph from raw data
-  analyse_graph.py     topology characterization (small-world, scale-free, spectral
-                        threshold, bow-tie, k-core, Louvain, Granovetter bridges, ...)
-                        AND precomputed heuristic feature tables (global + per-source)
-  heuristics.py         edge-scoring strategies (Strategy pattern, precomputed-lookup
-                        only) + shared, tie-break-aware top-k selection used by both
-                        baselines and ALNS
-  create_subgraphs.py   frozen live-edge scenario subgraphs (SAA in-sample + Monte
-                        Carlo out-of-sample), generated once, immutable afterwards
-  evaluator.py          masked-BFS reach evaluation; one function used for both SAA
-                        (inside the ALNS loop) and OOS (final validation only),
-                        never both at once — see README's structure notes in REPORT.md
-  greedy_baseline.py     hop0-only baselines, one per heuristic
-  operators.py             ALNS destroy/repair operators (two independent families),
-                        operating on the hop-windowed active candidate pool
-  alns_optimizer.py       ALNS main loop: adaptive weights, SA acceptance, hop-horizon
-                        state and expansion (owns active_max_hop)
-  run_experiment.py       experiment orchestration → CSV output
-data/                     raw dataset + generated scenario/topology CSVs
-figures/                   generated only from CSVs in data/ or results/
+  config.py             every path, seed and tunable constant, in one place
+  create_graph.py       load the raw data, build the directed IC graph
+  analyse_graph.py      topology characterisation (small-world, scale-free, spectral
+                        threshold, bow-tie, k-core, Louvain, Granovetter bridges) and
+                        the precomputed edge-feature tables
+  source_context.py     SourceContext: everything precomputed once per source, plus a
+                        structural guard that the feature table still matches the graph
+  heuristics.py         the six edge-scoring strategies + the one selection mechanism
+                        shared by baselines (deterministic) and ALNS (rank-biased)
+  create_subgraphs.py   frozen live-edge scenarios: SAA in-sample + MC out-of-sample
+  evaluator.py          reach evaluation; one Evaluator is bound to one scenario set,
+                        which is what keeps SAA and OOS structurally separate
+  operators.py          ALNS destroy + repair, two independently weighted families
+  alns_optimizer.py     the ALNS loop: three adaptive weight books (destroy, repair,
+                        hop scope), SA acceptance
+  greedy_baseline.py    hop0-only baselines, one per heuristic          (not yet written)
+  run_experiment.py     orchestration -> CSV                            (not yet written)
+  smoke_test.py         end-to-end pipeline check with timings
+  test_evaluator.py     regression tests for the objective function
+  make_topology_figures.py  Chapter 1-2 figures, generated from the CSVs
+data/                   raw dataset + generated topology/feature CSVs
+figures/                generated only from CSVs
 ```
 
 `PILOT_TESTS.md` documents lessons (including bugs to avoid) from an earlier, discarded

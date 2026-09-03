@@ -90,9 +90,8 @@ contain large tied groups.
 - MinCut used as a peer method in comparison tables — it sees the whole graph and is not a
   fair peer; report separately if used at all.
 - Un-seeded Louvain / un-seeded global `random` module.
-- `k ≥ out(s)` — decided as a **hard error**, not silent isolation (this reverses an
-  earlier pilot note; confirm this is still the intended behavior before the first
-  experiment run touches a hub source).
+- `k ≥ out(s)` — **resolved: not an error, just the trivial case** (see §13). The pilot
+  flip-flopped on this (§10 said isolate, §19 said hard error); §10 was right.
 
 ## 5. Numbers
 
@@ -468,3 +467,177 @@ This becomes its own short methodology subsection — pilot's own calibration (�
 later invalidated by unrelated bugs (§28/§32), so this time the calibration run must
 happen only after the architecture fixes in §1–§8 are in place and verified by the Phase 1
 smoke tests.
+
+## 11. Runtime — cost model, what was fixed, and what it cost us to learn
+
+Runtime matters here for a practical reason: every calibration and showcase run in
+Phase 2 pays this cost, so a 4x difference decides whether the experiment matrix fits
+in the time available.
+
+**Cost model (measured, not estimated).** One ALNS run costs roughly
+
+    sweeps x scenarios x per-BFS-time,   sweeps ~ max_iter + (#worst-destroy calls)
+
+with `per-BFS-time` scaling with the source's reach sigma_0, not its out-degree. At
+500 SAA scenarios one sweep is ~155 ms for a sigma_0 ~ 643 source. Measured
+end-to-end, k=5, 300 iterations:
+
+| source | out-degree | sigma_0 | ALNS runtime |
+|---|---|---|---|
+| 3616 | 9 | 74 | 9.4 s |
+| 774 | 6 | 41 | 9.8 s |
+| 0 (hub) | 486 | 644 | 65.9 s |
+| 253 | 22 | 644 | 64.3 s (was **750 s**, see below) |
+
+So **low-reach sources are cheap and high-reach sources dominate the budget** — worth
+knowing when choosing the showcase sample (§9), since a sample skewed toward large
+sigma_0 costs several times more for the same number of runs.
+
+**Four fixes took a k=20 run from ~270 s (and a 750 s pathological case) to ~65 s.**
+Each was found by profiling rather than guessed:
+
+1. **Marginal values in one pass instead of |D|+1 sweeps.** `destroy_worst` needs
+   sigma(D\{e}) for every e in D. Naively that is |D|+1 full sweeps and it alone was
+   ~237 s of a ~270 s run — exactly what PILOT_TESTS.md §34 predicted. It is not
+   needed: for a scenario with reached set R, restoring one edge (u,v) can only add
+   nodes reached *through* it, so the gain is provably zero unless the edge survived
+   percolation, u is in R and v is not. Only that last case does any traversal, and it
+   explores strictly new territory. Measured at **1.0x one evaluation instead of 21x**
+   for k=20, and verified exact against the naive version (test_evaluator.py).
+2. **The cut mask is a reused list indexed by node id, not a dict keyed by tail.** A
+   traversal probes every node it pops (~135 M probes per run) but D touches at most k
+   tails, so this trades hashing for an array index on the hottest line in the codebase.
+3. **`select_q` ranks once instead of per pick.** Its callers score statically, so
+   re-sorting the pool between picks cost O(q · n log n) for no behavioural gain.
+   Relatedly, tie-shuffling now uses a random sort key rather than `random.shuffle`
+   (profiled at 4% of total runtime on its own). R&P's Shaw removal genuinely must
+   re-rank each step — that one kept its dynamic loop.
+4. **The hop-windowed pool is cached per horizon level.** This is what caused the
+   750 s outlier; see below.
+
+**The 750 s outlier was a symptom, not just a slow path — flag for the Level-2
+hypothesis.** Source 253 has only 22 hop0 edges. With so few, the horizon-expansion
+rule ("grow if the frontier layer earned positive average reward this segment") fires
+almost every segment, so `active_max_hop` climbs and the candidate pool grows toward
+the entire reachable edge set (~20k edges), which was then being rebuilt, scored,
+filtered and sorted *every iteration*. Caching the pool per horizon fixed the runtime
+(750 s -> 64 s), but the underlying behaviour is still that **the horizon runs away on
+sources with a small hop0**. That is a research problem, not only a performance one:
+PILOT_TESTS.md §23 found the winning cut was pure hop0 in 31/40 cases, so a horizon
+that expands to hop 5-6 mostly dilutes the search across candidates that never win.
+PILOT_TESTS.md §33 already flagged this rule as unvalidated and demanding both a
+stricter expansion criterion and a contraction mechanism. **Open decision** (PLAN.md
+Phase 1) — the options are a stricter rule (require a sigma1 hit, not any positive
+reward), adding contraction, or a hard cap; whichever is chosen has to be measured,
+not assumed, because it *is* the Level-2 mechanism.
+
+**Correctness is pinned, not assumed.** The evaluator is the one component written for
+speed over obviousness, so `code/test_evaluator.py` checks it against an independent
+oracle: each scenario is rebuilt as a real igraph graph with the cut edges deleted and
+`subcomponent(mode="out")` gives ground truth. It also pins the one-pass marginals
+against the naive computation, monotonicity in the cut, that the reused cut buffer is
+left clean, and that caching never changes an answer. This started as a discrepancy
+(643.50 vs 643.096 between two versions) that turned out to come from since-deleted
+code — the lesson kept was the test, not the number.
+
+## 12. The hop-horizon mechanism was broken, and how we found out — thesis-relevant
+
+This is the most important methodological finding so far, and it belongs in the
+methodology chapter, not just in a commit message: **the original Level-2 mechanism (an
+expanding hop horizon) actively destroyed the search**, and replacing it with a third
+adaptive weight book fixed it. Both the diagnosis and the fix are reportable.
+
+### How the failure was detected
+
+Small sources make the search space enumerable. For a source with out-degree 9 and
+k=4 there are only C(9,4)=126 hop0 cuts, so *all* of them can be evaluated against the
+same SAA objective ALNS optimises, giving an exact ground-truth optimum. This measures
+**search quality specifically** — it is deliberately separate from the SAA-vs-true-sigma
+question, which is what out-of-sample validation is for.
+
+Against that ground truth the horizon version was far from optimal — gaps of 25-495%
+on spaces of 70-210 cuts that 300 iterations should nearly brute-force. Holding the
+horizon fixed instead was decisive:
+
+| horizon setting | exactly optimal | mean gap | worst gap |
+|---|---|---|---|
+| hop0 only, fixed | **8/8** | 0.0% | 0.0% |
+| hop0 U hop1, fixed | 5/8 | 18.1% | 84.9% |
+| adaptive horizon (original) | 1/8 | 154.6% | 494.6% |
+
+So the operators, adaptive weights, SA acceptance and evaluator were all sound; the
+horizon policy alone was responsible.
+
+### Why it failed — two distinct defects
+
+1. **The expansion predicate was vacuous.** sigma1/sigma2/sigma3 are positive and every
+   other outcome scores 0, so rewards are non-negative *by construction*. "Expand if the
+   frontier layer's average reward > 0" therefore reduces to "expand if any reward ever
+   occurred", which is almost always true. The horizon ratcheted open every segment and,
+   having no contraction rule, never closed. PILOT_TESTS.md §33 observed the same
+   behaviour without identifying this as the cause.
+2. **Flattening layers into one pool dilutes the search.** Once the horizon reaches
+   hop 5-6 the candidate pool approaches the whole reachable edge set (~20k edges), so
+   the handful of hop0 edges that actually close off the source are drowned out. This is
+   exactly PILOT_TESTS.md §23's independent finding that wide pools pick high-p hop1
+   edges which do not close the source (source 718: hop0 p gives sigma=48, hop0-1 p
+   gives sigma=642). It also caused a 750s runtime outlier (REPORT.md §11).
+
+### The replacement: hop scope as a third roulette wheel
+
+Repair now draws from **one hop layer per iteration**, chosen by its own roulette wheel
+alongside the destroy and repair wheels, updated by the same R&P rule. If the chosen
+layer cannot supply enough candidates the remainder comes from the other in-scope
+layers, so |D| = k always holds.
+
+Why this is the better mechanism, and better *for the thesis*:
+- It makes Level-2 a genuine adaptive-learning claim — per-layer weights, logged every
+  segment — rather than a one-way ratchet that cannot express "this layer is not worth
+  visiting".
+- It cannot run away: a layer that stops paying is simply down-weighted, which gives
+  contraction for free (the thing PILOT_TESTS.md §33 said was missing).
+- hop0 stays competitive instead of being diluted.
+- It matches the architecture that survived the pilot's own A/D testing (§10: a separate
+  roulette for hop-scope and for heuristic).
+
+**Layers start equally weighted.** Seeding a prior (the pilot used hop0=2, hop1=8) would
+prejudge precisely what Level-2 is asking, so ALNS starts uniform and has to learn.
+Layers deeper than hop3 are excluded outright, justified by PILOT_TESTS.md §23 finding
+no winning cut ever used hop>=4; revisit in calibration.
+
+**Result: 4/4 exactly optimal on the enumerable sources**, and in every case the learned
+scope weight was highest for hop0 — i.e. the mechanism recovers "the useful edges are
+usually adjacent to the source" from data rather than being told. That is a Level-2
+result in its own right and should be reported as one.
+
+### Caveat for the write-up
+
+These numbers come from a handful of small sources and a single seed, run to diagnose a
+bug — they are **not** the experiment. The measured protocol (proper source sample,
+budgets, baselines, seeds, OOS validation) still has to produce the reported figures.
+What is established here is a design decision and its justification.
+
+
+## 13. k >= out(s) is the trivial case, not an error
+
+Settled: when the budget can cut every edge leaving the source, that is not a
+misconfiguration to reject — it is an instance whose optimum is known in closed form.
+The warm start cuts all of hop0, which isolates the source, so sigma = 1 (the source
+still counts itself) and that is provably the global minimum: no cut can do better,
+because sigma >= 1 always. Any leftover budget is topped up from other layers to keep
+|D| = k, though those edges are unreachable once the source is isolated.
+
+The search then stops immediately with `stop_reason="isolated"` rather than spending
+300 iterations rediscovering an optimum it already holds. Measured on a source with
+out-degree 6: k=6 and k=8 both return sigma=1.000 in 0 iterations, while k=3 runs
+normally.
+
+This restores PILOT_TESTS.md §10's original position ("take all hop0, k_eff = |hop0|,
+do not raise ValueError; ALNS may stop when spread ~ 1") against §19's later reversal
+to a hard error. §10 was right: raising would have forced every experiment driver to
+special-case a situation the algorithm can simply handle, and would have thrown away a
+legitimate data point (the budget at which a source becomes fully containable is itself
+worth reporting).
+
+Reporting note: `stop_reason` distinguishes these runs, so trivially-solved instances
+can be excluded from averages where they would otherwise flatter every method equally.
