@@ -379,6 +379,10 @@ needs one probability per directed edge. **Default: keep the most recent rating 
   and with an explicit **closing** rule for the horizon (pilot's version only ever
   expanded, never contracted — decide and implement a contraction rule this time, or
   explicitly justify why expansion-only is acceptable).
+  **Superseded by §12**: the horizon is gone entirely, replaced by the hop-scope roulette
+  wheel, which gives contraction for free (a layer that stops paying is down-weighted).
+  The per-segment trace requirement stands and is met. The Level-2 claim itself is
+  narrowed by §14.2 — "does hop>0 reach the winning cut", not "ALNS learns search depth".
 
 ## 7. Scenario architecture and candidate space — corrections (supersedes earlier draft of §6)
 
@@ -400,6 +404,10 @@ needs one probability per directed edge. **Default: keep the most recent rating 
   the orchestration code (not yet written) holds a reference to `mc_scenarios`, and
   the ALNS loop is only ever constructed with `saa_scenarios` — never both.
 - **Hop-layer candidate windowing is kept, but it isn't a standalone script.**
+  *(The `active_max_hop` mechanism described in this bullet was removed — see §12. Hop
+  layers are still per-source precomputed features and still live in the optimizer's own
+  state, but repair draws from one layer per iteration chosen by a roulette wheel, not
+  from an expanding window. The rest of the bullet stands.)*
   Hop-distance-from-source is a precomputed, per-source feature (`analyse_graph.py`,
   §8) — an edge's layer = BFS distance of its tail from `s`. The *state* that changes
   during search (`active_max_hop`, starting at hop0∪hop1, expanding per segment when
@@ -606,9 +614,14 @@ Layers deeper than hop3 are excluded outright, justified by PILOT_TESTS.md §23 
 no winning cut ever used hop>=4; revisit in calibration.
 
 **Result: 4/4 exactly optimal on the enumerable sources**, and in every case the learned
-scope weight was highest for hop0 — i.e. the mechanism recovers "the useful edges are
-usually adjacent to the source" from data rather than being told. That is a Level-2
-result in its own right and should be reported as one.
+scope weight was highest for hop0.
+
+**Correction (see §14.2): that last observation does not license the claim it was
+originally written to support.** The layers being compared differ in size by up to three
+orders of magnitude (hop0 = 4–486 edges, hop2 = 4,780–13,765 on the same sources), so a
+higher learned weight for hop0 partly measures that hop0 is easier to search, not only
+that its edges are better. The scope weights stay a legitimate *diagnostic*; they are
+not on their own evidence that "the mechanism recovers where the useful edges are".
 
 ### Caveat for the write-up
 
@@ -641,3 +654,129 @@ worth reporting).
 
 Reporting note: `stop_reason` distinguishes these runs, so trivially-solved instances
 can be excluded from averages where they would otherwise flatter every method equally.
+
+## 14. R&P fidelity audit — read from the paper, term by term
+
+Prompted by a code review that found `destroy_related` degenerate. Everything below was
+checked against the PDF itself, not against pilot paraphrase.
+
+### 14.1 Shaw relatedness is R&P eq. (17), and we were missing a quarter of it
+
+R&P's relatedness measure, verbatim (§3.1.1, eq. 17):
+
+```
+R(i,j) = φ·( d_A(i)A(j) + d_B(i)B(j) )                    location
+       + χ·( |T_A(i) − T_A(j)| + |T_B(i) − T_B(j)| )      time
+       + ψ·|l_i − l_j|                                    load
+       + ω·( 1 − |K_i ∩ K_j| / min{|K_i|,|K_j|} )         servable set
+```
+
+with each raw term scaled to [0,1] so that `0 ≤ R ≤ 2(φ+χ)+ψ+ω`, and their §4.3.2 tuned
+vector giving **(φ, χ, ψ, ω) = (9, 3, 2, 5)**.
+
+A "request" for SS-IMER is an edge `e = (u,v)`; its two locations A/B are the tail and
+the head. The mapping:
+
+| R&P term | weight | our counterpart | was it there? |
+|---|---|---|---|
+| φ location | 9 | co-location of tails / of heads (0 if shared, else 1 — our nodes carry no metric, so R&P's normalised distance degenerates to an indicator) | yes |
+| χ time | 3 | BFS hop from `s` of each endpoint — under IC the earliest step a node can be reached *is* its hop, so hop distance is our time coordinate | tail only; head half was missing |
+| ψ load | 2 | the edge's transmission probability | yes |
+| ω servable set | 5 | overlap of the *territory* each edge feeds — the head's bounded descendant set, compared with R&P's own min-normalised overlap coefficient (not Jaccard: min-normalisation makes a small set contained in a large one count as fully related, which is the intended semantics) | **missing entirely** |
+
+**Why this mattered.** Within one hop layer every tail is `s`, so the φ and χ terms are
+constant by construction — correctly, those edges do start in the same place at the same
+time. With ω absent, relatedness reduced to `|p_a − p_b|` alone, and `p` takes only ten
+discrete values with 60.75% of edges at 0.018 (PILOT_TESTS.md §30). Measured on 20-edge
+hop0 cuts, 190 pairs: **2 distinct relatedness values on the out-degree-486 hub, 4 on
+source 253.** `destroy_related` was `destroy_random` with extra steps, in the regime that
+dominates the results.
+
+**After restoring ω** (and the head half of χ): 29 and 161 distinct values on the same
+two sources. Cost: 0.23 s to build the territory table (once per graph, mean |T| = 213
+nodes at depth 2) and ~0.25 s per run for the relatedness evaluations.
+
+Restoring the fourth term is also what makes **R&P's tuned (9,3,2,5) usable**. Equal
+weights were not a calibration choice, they were a symptom: with one term missing there
+was nothing for their vector to weight. Recalibration on our own instances stays a
+Phase 2 item (§10), but the starting point is now theirs, not a placeholder.
+
+Measured effect on search quality, source 1 / k=20 / seed 7, everything else identical:
+SAA σ **626.57 → 602.98** (2.6% → 6.2% below the warm start), new-global-best hits 7 → 28,
+runtime unchanged at ~46 s. One instance, one seed — a sanity check, not a result.
+
+### 14.2 Hop-layer size is a confound the mechanism cannot remove
+
+Measured candidate-pool sizes per layer:
+
+| source | out(s) | hop0 | hop1 | hop2 | hop3 |
+|---|---|---|---|---|---|
+| 718 | 4 | 4 | 301 | 7,567 | 12,601 |
+| 3616 | 9 | 9 | 350 | 6,073 | 12,120 |
+| 253 | 22 | 22 | 6,403 | 6,403 | 13,298 |
+| 1 | 186 | 186 | 6,343 | 13,647 | 2,148 |
+| 0 (hub) | 486 | 486 | 4,863 | 13,765 | 3,159 |
+
+R&P's `L[⌊y^p·|L|⌋]` draw picks expected rank `|L|/(p+1)`. At p=6 that is rank ~1 out of
+a 9-edge hop0 and rank ~1,966 out of a 13,765-edge hop2. R&P tuned a single `p` against
+instances of a single size (50 requests); our `|L|` varies by three orders of magnitude
+across the layers the scope wheel is choosing between, so one `p` cannot mean the same
+thing in each. **This is not fixable by weighting** — the layer sizes are a property of
+the graph.
+
+**Consequence for what the thesis may claim.** The Level-2 question is *"do edges beyond
+hop0 ever end up in the winning cut?"*, not *"which layer scores best?"*. Evidence for it
+is `hop_mix` (composition of the best cut) and `best_hits_by_hop` (which layer supplied
+the edges that produced a new global best) — not `scope_weights`. The confound is
+asymmetric and works in our favour:
+
+- a **positive** finding (hop>0 edges in winning cuts) is *strengthened* by it — they were
+  found despite a search disadvantage of up to 1,900:1;
+- a **negative** finding cannot distinguish "deeper edges are not useful" from "deeper
+  layers are too large to search", and must be hedged accordingly.
+
+Every run now records `layer_sizes` and `scope_selected` alongside the weights, so the
+weights can always be read against pool size and selection frequency rather than alone.
+
+### 14.3 Scope reward attribution follows R&P's own rule
+
+If repair cannot fill from the chosen layer it falls back to the others. The reward was
+being booked to the *chosen* scope regardless of where the edges came from. Fixed: a
+layer is credited only for edges it actually supplied, and when several layers
+contribute, **each gets the full increment** — which is R&P §3.4 verbatim: *"The scores
+for both heuristics are updated by the same amount as we can not tell whether it was the
+removal or the insertion that was the reason for the 'success'."* Splitting the reward
+proportionally would be our own invention and would additionally assume σ is divisible
+across the edges of a cut, which is precisely the non-submodularity the thesis argues
+against (§1, thesis §3.3).
+
+The fallback provably cannot fire under the current configuration — `|hop0| > k` in every
+non-isolated run and `partial` holds only `k − q` edges, so the chosen layer always has at
+least `|hop0| − k + q > q` candidates left — and `fallback_used` measured 0 on every layer
+across the runs done so far. So this change is currently a no-op; it converts a guarantee
+that depended on an algebraic argument into one that holds structurally.
+
+### 14.4 Remaining deliberate departures from R&P
+
+Stated here so the thesis can list them honestly rather than claiming unqualified fidelity:
+
+1. **Worst removal ranks once.** R&P Algorithm 3 rebuilds and re-sorts `L` inside the
+   removal loop, since removing one request changes `cost(i,s)` for the rest. We compute
+   all marginals once and draw `q` picks from that single ranking. Doing it literally
+   costs one full marginal pass per pick (~155 ms), i.e. roughly +2 minutes per run at
+   q=8 over ~100 worst-removal calls. Shaw removal *does* re-rank per step, because there
+   it costs only dict lookups and is the operator's defining feature.
+2. **Cooling rate** derived from our iteration budget, not their c=0.99975 (§6a).
+3. **q bounds** proportional to k, since their `4 ≤ ρ` is undefined for our budgets (§6a).
+4. **The hop-scope wheel** has no R&P counterpart at all — they have exactly two families
+   (§3.3). Ours is a third, scored by their rule but not their idea.
+5. **Repair uses the `y^p` sampler**, where R&P's insertion heuristics are deterministic —
+   forced by our discrete, heavily-tied scores (§7a).
+6. **The noise term (§3.6) is not ported** — it is defined against a continuous distance
+   matrix and has no analogue here (§6a).
+
+### 14.5 Reading the paper
+
+`pdftotext`/poppler is not installed on this machine, which is why an earlier attempt to
+quote eq. (17) failed. `pypdf` extracts it fine and is installed outside the project
+(not in `requirements.txt`, not in `.venv`) since it is a reading tool, not a dependency.

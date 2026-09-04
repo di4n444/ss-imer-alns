@@ -46,6 +46,23 @@ MC_SCENARIO_SEED = 999  # must differ from SAA_SCENARIO_SEED - in-sample/OOS ind
 DESTROY_WORST_P = 3
 DESTROY_SHAW_P = 6
 
+# Shaw relatedness weights, R&P eq. (17). Their §4.3.2 tuned vector gives
+# (phi, chi, psi, omega) = (9, 3, 2, 5), read from the paper directly. These are usable
+# as-is only because every one of R&P's four terms has a counterpart in our formulation
+# (operators._relatedness documents the mapping term by term); when a term was missing
+# the weights had to be equal-and-meaningless instead. Still starting points to
+# recalibrate (PLAN.md Phase 2), but grounded ones.
+SHAW_PHI = 9    # location: are the two edges attached to the same tail / same head
+SHAW_CHI = 3    # time: how far into the cascade each endpoint is reached (BFS hop)
+SHAW_PSI = 2    # load: transmission probability carried by the edge
+SHAW_OMEGA = 5  # servable set: overlap of the territory each edge feeds
+
+# Depth of the "territory" set standing in for R&P's vehicle set K_i. Bounded for the
+# same reason K_i is bounded: on a graph whose SCC holds 86.7% of nodes, the unbounded
+# descendant set is nearly everything for nearly everyone, and every pair would look
+# identical. Measured: depth 2 gives mean |T| = 213 nodes.
+TERRITORY_DEPTH = 2
+
 # --- alns_optimizer.py: R&P (2006) tuned vector (§4.3.2), REPORT.md §6a — starting -
 # points to recalibrate on our own problem (PLAN.md Phase 2), not final values.     -
 

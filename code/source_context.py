@@ -14,6 +14,8 @@ feature table into dicts once per source turns that into an O(1) hash lookup
 
 from dataclasses import dataclass
 
+import numpy as np
+
 import analyse_graph
 
 
@@ -28,29 +30,47 @@ class SourceContext:
     spectral: dict       # eid -> Tong's u(i)*v(j)
     betweenness: dict    # eid -> source-rooted Brandes score (0.0 if off every path)
     hop_of_edge: dict    # eid -> hop level of the edge's tail (reachable edges only)
+    hop_of_node: dict    # node -> BFS hop from the source (R&P eq.17's time coordinate)
     edges_by_hop: dict   # hop -> [eid]
     hop_span: float      # max-min observed hop, for normalising relatedness
+    territory: list      # node -> bounded descendant set (R&P eq.17's servable set K_i)
 
 
 def verify_feature_alignment(g, features) -> None:
     """Structural guard, the counterpart to create_graph.verify_vertex_alignment: the
     feature table is keyed by `edge_id` and must line up with the graph's own edge
     indexing, row for row. Cheap enough (one pass over M edges) to run every time
-    rather than trusting that whoever regenerated the CSV used the same graph."""
+    rather than trusting that whoever regenerated the CSV used the same graph.
+
+    Vectorised deliberately: the obvious `features.loc[e.index]` per edge measured 2.3 s
+    per source and was ~90% of the cost of building a SourceContext — the exact
+    pandas-indexing-in-a-loop pattern REPORT.md §8 forbids in the hot path, which had no
+    business being here either."""
     if len(features) != g.ecount():
         raise AssertionError(
             f"edge_features.csv has {len(features)} rows but the graph has "
             f"{g.ecount()} edges - regenerate it with analyse_graph.py."
         )
+    rows = features.reindex(range(g.ecount()))
+    if rows["source"].isna().any():
+        missing = int(rows["source"].isna().to_numpy().argmax())
+        raise AssertionError(
+            f"edge_features.csv has no row for edge_id {missing} - its edge_id column "
+            f"does not cover 0..{g.ecount() - 1}, regenerate it with analyse_graph.py."
+        )
     names = g.vs["name"]
-    for e in g.es:
-        row = features.loc[e.index]
-        if row.source != names[e.source] or row.target != names[e.target]:
-            raise AssertionError(
-                f"edge_features.csv row {e.index} is ({row.source}->{row.target}) but "
-                f"the graph's edge {e.index} is "
-                f"({names[e.source]}->{names[e.target]}) - stale CSV, regenerate it."
-            )
+    edgelist = g.get_edgelist()
+    expected_u = np.fromiter((names[u] for u, _ in edgelist), np.int64, len(edgelist))
+    expected_v = np.fromiter((names[v] for _, v in edgelist), np.int64, len(edgelist))
+    mismatch = ((rows["source"].to_numpy() != expected_u)
+                | (rows["target"].to_numpy() != expected_v))
+    if mismatch.any():
+        i = int(mismatch.argmax())
+        raise AssertionError(
+            f"edge_features.csv row {i} is "
+            f"({rows['source'].iloc[i]}->{rows['target'].iloc[i]}) but the graph's edge "
+            f"{i} is ({expected_u[i]}->{expected_v[i]}) - stale CSV, regenerate it."
+        )
 
 
 def build_source_context(g, source: int, features) -> SourceContext:
@@ -94,6 +114,12 @@ def build_source_context(g, source: int, features) -> SourceContext:
         spectral=spectral,
         betweenness=sf["betweenness"],
         hop_of_edge=hop_of_edge,
+        hop_of_node=hop_of_node,
         edges_by_hop=sf["edges_by_hop"],
         hop_span=hop_span,
+        # Source-independent, so rebuilding it per source is redundant work — but it
+        # measures 0.23 s against ~45 s for one ALNS run, and keeping SourceContext
+        # self-constructing is worth more than saving that. Hoist it to the caller only
+        # if the source sample ever gets large enough for it to matter.
+        territory=analyse_graph.node_territories(g),
     )

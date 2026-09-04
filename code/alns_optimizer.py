@@ -13,7 +13,9 @@ Three deliberate departures, all documented in REPORT.md §6a and §12:
   - the hop scope is our own addition — R&P have no notion of a restricted candidate
     neighbourhood — implemented as a *third weight book* over hop layers rather than an
     expanding horizon, because the horizon version was measured to wreck the search
-    (REPORT.md §12);
+    (REPORT.md §12). It is scored by R&P's own attribution rule (§3.4: every mechanism
+    involved in a success gets the same increment, because you cannot tell which one
+    caused it), applied to the layers that actually supplied the new edges;
   - Delta = 0 is accepted but scores nothing, which is what a strict reading of R&P's
     three sigma cases already implies (PILOT_TESTS.md §18's bug, fixed by construction).
 """
@@ -79,6 +81,11 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
     # Candidate layers, capped (config.ALNS_MAX_HOP_SCOPE). Each layer's edge list is
     # static, so it is materialised once here and only the D-exclusion is per-iteration.
     if fixed_hop_scope is not None:
+        if fixed_hop_scope not in ctx.edges_by_hop:
+            raise ValueError(
+                f"source {ctx.source} has no hop{fixed_hop_scope} layer to pin repair to; "
+                f"available layers: {sorted(ctx.edges_by_hop)}"
+            )
         scopes = [fixed_hop_scope]
     else:
         scopes = sorted(h for h in ctx.edges_by_hop if h <= ALNS_MAX_HOP_SCOPE)
@@ -92,7 +99,11 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
     # edge leaving the source, so the warm start does exactly that, isolating it. Any
     # remaining budget is topped up from the other layers to keep |D| = k, though those
     # edges are unreachable once the source is isolated (PILOT_TESTS.md §10).
-    hop0 = ctx.edges_by_hop[0]
+    #
+    # A source with out-degree 0 (411 of Bitcoin Alpha's 3683 nodes) has no hop0 layer at
+    # all: sigma = 1 with an empty cut, so it is the isolated case too, handled rather
+    # than crashed. Such sources still do not belong in a measurement sample.
+    hop0 = ctx.edges_by_hop.get(0, [])
     if k >= len(hop0):
         current = set(hop0)
         spare = [e for h in scopes if h != 0 for e in layer_edges[h] if e not in current]
@@ -102,6 +113,14 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
 
     current_reach = evaluator.evaluate_reach(ctx.source, current, endpoints)
     best, best_reach = set(current), current_reach
+
+    # R&P's "only reward unvisited solutions" rule needs the set of solutions *this run*
+    # has seen. Deliberately not `evaluator.cache`: that is per-evaluator, so reusing one
+    # evaluator across k values or seeds (which run_experiment.py will want to do, since
+    # the scenario set is the expensive thing to build) would leak one run's visited
+    # solutions into the next run's rewards and make `evaluations` cumulative rather than
+    # per-run. It also raised TypeError outright on a use_cache=False evaluator.
+    visited = {frozenset(current)}
 
     temperature = ALNS_START_TEMP_CONTROL * current_reach / math.log(2)  # R&P §3.5
     cooling_rate = ALNS_FINAL_TEMP_FRACTION ** (1 / ALNS_MAX_ITER)
@@ -113,6 +132,12 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
     repair_scores, repair_counts = _zeroed(HEURISTICS), _zeroed(HEURISTICS)
     scope_scores, scope_counts = _zeroed(scopes), _zeroed(scopes)
 
+    # At k=1 these collapse to q = 1 = |D|: destroy empties the cut and repair rebuilds it
+    # from nothing, so the search degenerates to a memoryless random restart with no
+    # neighbourhood structure at all. k=2 and k=3 give q=1, a 1-swap (PILOT_TESTS.md §22
+    # already noted this). Both are correct, but neither is "adaptive" in any strong
+    # sense, so results at those budgets must be read with that in mind — hence q_min/q_max
+    # are returned with the run rather than left implicit (PILOT_TESTS.md §37).
     q_min = max(1, math.floor(ALNS_Q_MIN_FRAC * k))
     q_max = max(q_min, min(k - 1, math.floor(ALNS_Q_MAX_FRAC * k)))
 
@@ -121,7 +146,23 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
     # counts of who actually produced a new global best. Same for the scope wheel, which
     # is the Level-2 claim's evidence.
     best_hits_by_heuristic = _zeroed(HEURISTICS)
+    # `best_hits_by_scope` stays a *selection* statistic (which layer the wheel picked
+    # when a new best landed); `best_hits_by_hop` is the *origin* statistic (which layer
+    # the winning edges came from). They coincide whenever repair is served entirely by
+    # the chosen layer, and PILOT_TESTS.md §23 is explicit that the two questions must
+    # not be conflated, so both are kept. `scope_selected` is the denominator for
+    # reading either against how often the wheel actually chose that layer.
     best_hits_by_scope = _zeroed(scopes)
+    scope_selected = _zeroed(scopes)
+    # Iterations where the chosen layer could not supply q candidates and the remainder
+    # came from other layers. The scope *score* follows the edges' actual origin, so the
+    # learning is unaffected — but `best_hits_by_scope` still keys on the selected layer,
+    # so a non-zero count here means that one statistic is mixing layers and only
+    # `best_hits_by_hop` should be read as Level-2 evidence. Counted rather than assumed
+    # away: the algebra says it can never fire (|hop0| > k in every non-isolated run, and
+    # `partial` holds only k-q edges, so the chosen layer always has at least
+    # |hop0|-k+q > q candidates left), but that is an argument, not a measurement.
+    fallback_used = _zeroed(scopes)
     best_hits_by_hop, neutral_moves = {}, _zeroed(HEURISTICS)
     trace = []
 
@@ -146,20 +187,24 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
         # (small hop0, or most of it already cut) the remainder comes from the other
         # in-scope layers, so |D| = k always holds (PILOT_TESTS.md §10's fill rule).
         added = repair(repair_name, [e for e in layer_edges[scope] if e not in partial],
-                        partial, wanted, ctx, rng, ALNS_REPAIR_P)
+                        wanted, ctx, rng, ALNS_REPAIR_P)
         if len(added) < wanted:
             spare = [e for e in fallback_edges if e not in partial and e not in added]
-            added |= repair(repair_name, spare, partial | added, wanted - len(added),
-                             ctx, rng, ALNS_REPAIR_P)
+            added |= repair(repair_name, spare, wanted - len(added), ctx, rng, ALNS_REPAIR_P)
+            fallback_used[scope] += 1
         candidate = partial | added
 
         # PILOT_TESTS.md B2: a short repair is a bug to surface, never a silent skip.
-        assert len(candidate) == k or len(candidate) == len(current), (
+        # |current| is invariably k inside this loop (the k >= |hop0| branch is isolated
+        # and never enters it), so this is the full guard, not a weakened one.
+        assert len(candidate) == k, (
             f"repair returned |D|={len(candidate)} != k={k} at hop scope {scope}"
         )
 
-        already_visited = frozenset(candidate) in evaluator.cache
+        candidate_key = frozenset(candidate)
+        already_visited = candidate_key in visited
         candidate_reach = evaluator.evaluate_reach(ctx.source, candidate, endpoints)
+        visited.add(candidate_key)
         delta = candidate_reach - current_reach
         accepted = delta <= 0 or rng.random() < math.exp(-delta / temperature)
 
@@ -177,11 +222,23 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
         if delta == 0:
             neutral_moves[repair_name] += 1
 
-        for scores, counts, key in ((destroy_scores, destroy_counts, destroy_name),
-                                     (repair_scores, repair_counts, repair_name),
-                                     (scope_scores, scope_counts, scope)):
-            scores[key] += reward
-            counts[key] += 1
+        # The scope wheel is scored by where the new edges actually CAME FROM, not by
+        # which layer was selected — a layer only earns credit for edges it supplied.
+        # When repair spans layers, every contributing layer gets the full reward, which
+        # is R&P's own rule for an unattributable success: "The scores for both
+        # heuristics are updated by the same amount as we can not tell whether it was the
+        # removal or the insertion that was the reason for the 'success'" (§3.4). Splitting
+        # the reward proportionally would be our invention, and would additionally assume
+        # sigma is divisible across the edges of a cut — exactly the non-submodularity the
+        # thesis argues against.
+        origins = {ctx.hop_of_edge[e] for e in added}
+        for scores, counts, keys in ((destroy_scores, destroy_counts, (destroy_name,)),
+                                      (repair_scores, repair_counts, (repair_name,)),
+                                      (scope_scores, scope_counts, origins)):
+            for key in keys:
+                scores[key] += reward
+                counts[key] += 1
+        scope_selected[scope] += 1
 
         if accepted:
             current, current_reach = candidate, candidate_reach
@@ -189,7 +246,7 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
                 best, best_reach = set(candidate), candidate_reach
                 best_hits_by_heuristic[repair_name] += 1
                 best_hits_by_scope[scope] += 1
-                for hop in {ctx.hop_of_edge[e] for e in added if e in ctx.hop_of_edge}:
+                for hop in {ctx.hop_of_edge[e] for e in added}:
                     best_hits_by_hop[hop] = best_hits_by_hop.get(hop, 0) + 1
                 if best_reach <= 1.0 + 1e-9:
                     stop_reason = "isolated"  # provably optimal; stop rather than spin
@@ -217,9 +274,12 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
     # hop composition OF THE CUT, kept separate from the search-side hop statistics
     # above: PILOT_TESTS.md §23 warns explicitly not to conflate "which layer the search
     # visited" with "which layer the winning edges came from".
+    # Every candidate edge comes from `edges_by_hop`, whose domain is exactly
+    # `hop_of_edge`'s, so a direct lookup is correct and a KeyError here would be a real
+    # invariant violation worth raising rather than a None column worth hiding.
     hop_mix = {}
     for eid in best:
-        hop = ctx.hop_of_edge.get(eid)
+        hop = ctx.hop_of_edge[eid]
         hop_mix[hop] = hop_mix.get(hop, 0) + 1
 
     return {
@@ -234,7 +294,11 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
         "best_hits_by_heuristic": best_hits_by_heuristic,
         "best_hits_by_scope": best_hits_by_scope,
         "best_hits_by_hop": best_hits_by_hop,
+        "scope_selected": scope_selected,
         "neutral_moves": neutral_moves,
-        "evaluations": len(evaluator.cache) if evaluator.cache is not None else None,
+        "fallback_used": fallback_used,
+        "layer_sizes": {h: len(layer_edges[h]) for h in scopes},
+        "q_bounds": (q_min, q_max),
+        "evaluations": len(visited),
         "trace": trace,
     }

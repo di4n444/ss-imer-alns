@@ -16,12 +16,20 @@ The core research question is whether ALNS's adaptive learning helps at two leve
 1. **Which topological heuristic** (edge probability, degree, Granovetter local bridge,
    betweenness, spectral score, random) best estimates which edges to remove, learned via
    adaptive operator weights rather than fixed a priori.
-2. **How far from the source** the edges worth removing actually are — most cascades are
-   choked off closest to `s`, but the real bottleneck can sit several hops away when local
-   edges lead to dead ends. ALNS's candidate pool is organized into hop layers (BFS
-   distance of an edge's tail from `s`), starting at hop0∪hop1 and expanding outward
-   during the search based on measured reward — an explicit, logged, adaptive mechanism,
-   not just a byproduct of unrestricted search. Baselines below stay fixed at hop0.
+2. **How far from the source** the edges worth removing actually are. The intuition is to
+   cut edges leaving `s` directly, but when several independent hop0 edges all feed the
+   same well-connected region, a budget `k` smaller than that fan-out cannot close them
+   all — and if those paths converge on a shared choke point a few hops downstream,
+   cutting that one edge is far cheaper (REPORT.md §8c). ALNS's candidate pool is
+   organized into hop layers (BFS distance of an edge's tail from `s`) and repair draws
+   from **one layer per iteration, chosen by its own roulette wheel** alongside the
+   destroy and repair wheels — an explicit, logged, adaptive mechanism, not a byproduct
+   of unrestricted search. An earlier expanding-horizon version of this was measured to
+   wreck the search and was removed (REPORT.md §12). Baselines below stay fixed at hop0.
+
+   The question this asks is *"do edges beyond hop0 ever reach the winning cut?"*, not
+   *"which layer scores best"* — the layers differ in size by up to 1,900:1, so the
+   learned weights alone cannot answer the latter (REPORT.md §14.2).
 
 ALNS is compared against greedy baselines that use the *same* heuristic-scoring logic but
 are restricted to edges directly incident to `s` (hop0) — isolating search breadth and

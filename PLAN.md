@@ -41,9 +41,10 @@ both); single **config module** as the only place literals/seeds live.
       `edge_scores` for the six heuristics (plain dict lookups — the earlier pandas
       `.loc`-per-edge version was microseconds *per candidate* on pools of thousands);
       `rank`/`biased_index`/`select_q`/`topk` are the one shared selection mechanism
-      (REPORT.md §3/§7a). `active_pool` turns the loop's `active_max_hop` into a
-      candidate list. `tie_group_sizes` diagnostic is written but not yet wired into a
-      run — that is a Phase 2 measurement task.
+      (REPORT.md §3/§7a). Candidate lists per hop layer are materialised in
+      `run_alns` itself, since they are search state, not a heuristic concern.
+      `tie_group_sizes` diagnostic is written but not yet wired into a run — that is a
+      Phase 2 measurement task.
 - [x] **`create_subgraphs.py`** — frozen live-edge scenarios as plain-Python adjacency
       lists (`list[list[int]]`, targets only, occupancy baked in at generation time so
       the BFS never re-checks it — PILOT_TESTS.md §24). numpy still does the vectorised

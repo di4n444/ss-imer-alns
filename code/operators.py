@@ -9,12 +9,27 @@ Strategy pattern here.
 
 Grounded in R&P (2006) §3.1: random removal, worst removal (Algorithm 3) and Shaw
 "related" removal (Algorithm 2), with their tuned determinism exponents
-(p_worst=3, p_Shaw=6 — see REPORT.md §6a).
+(p_worst=3, p_Shaw=6 — see REPORT.md §6a), and Shaw relatedness as their eq. (17)
+mapped term by term onto SS-IMER (REPORT.md §14).
+
+Fidelity, stated precisely because "true R&P" is a requirement of this thesis:
+  - Shaw removal follows Algorithm 2 exactly, including the re-ranking against the
+    growing chosen set that is the operator's defining feature;
+  - random removal is Algorithm 3.1.2 (Shaw with p=1, implemented separately as R&P do);
+  - worst removal follows Algorithm 3 except that it ranks once instead of rebuilding L
+    per pick — a cost-driven departure, documented on the function itself.
 """
 
 import random
 
-from config import DESTROY_SHAW_P, DESTROY_WORST_P
+from config import (
+    DESTROY_SHAW_P,
+    DESTROY_WORST_P,
+    SHAW_CHI,
+    SHAW_OMEGA,
+    SHAW_PHI,
+    SHAW_PSI,
+)
 from heuristics import biased_index, edge_scores, rank, select_q
 
 
@@ -26,35 +41,81 @@ def destroy_random(D: frozenset, q: int, ctx, evaluator, rng: random.Random) -> 
 
 
 def destroy_worst(D: frozenset, q: int, ctx, evaluator, rng: random.Random) -> set:
-    """R&P Algorithm 3. "Worst" = the members of D contributing least to reducing
-    reach, i.e. the cheapest to give back, freeing budget for repair to spend better.
+    """R&P Algorithm 3, with one documented departure. "Worst" = the members of D
+    contributing least to reducing reach, i.e. the cheapest to give back, freeing budget
+    for repair to spend better.
 
     Marginal values come from `Evaluator.marginal_values`, which computes all |D| of
     them in one pass per scenario instead of |D|+1 full sweeps — without that this
-    single operator dominated the entire runtime (REPORT.md §11)."""
+    single operator dominated the entire runtime (REPORT.md §11).
+
+    **Departure**: R&P rebuild and re-sort L *inside* the removal loop (Algorithm 3
+    line 3), because removing one request changes cost(i,s) for the rest. We rank once
+    and draw q picks from that single ranking. Doing it literally would cost one full
+    marginal pass per pick — measured at ~155 ms each, so up to q=8 picks over ~100
+    worst-removal calls in a 300-iteration run, roughly +2 minutes per run. Shaw removal
+    below *does* re-rank each step, because there the re-ranking is the operator's whole
+    point and it costs only dict lookups."""
     _, gains = evaluator.marginal_values(ctx.source, D, ctx.endpoints)
     scores = {eid: -gain for eid, gain in gains.items()}  # least valuable ranks first
     return set(select_q(D, scores, ctx.endpoints, q, rng, DESTROY_WORST_P))
 
 
 def _relatedness(a: int, b: int, ctx) -> float:
-    """R(i,j) in R&P §3.1.1 — lower means more related. Four terms, each normalised to
-    roughly [0,1] against what this instance actually contains (R&P normalise their raw
-    terms the same way rather than using absolute scales).
+    """R(i,j), R&P eq. (17), mapped onto SS-IMER. Lower means more related.
 
-    Equal weights are an uncalibrated placeholder; R&P tuned theirs (φ,χ,ψ,ω)=(9,3,2,5)
-    for PDPTW terms that have no counterpart here. Flagged for Phase 2 (REPORT.md §10)."""
+    R&P (PDPTW):
+        R(i,j) = phi*( d_A(i)A(j) + d_B(i)B(j) )                      location
+               + chi*( |T_A(i)-T_A(j)| + |T_B(i)-T_B(j)| )            time
+               + psi*|l_i - l_j|                                      load
+               + omega*( 1 - |K_i & K_j| / min(|K_i|,|K_j|) )         servable set
+
+    A "request" here is an edge e=(u,v); its two locations A/B are the tail and the head.
+
+    - phi   R&P use normalised road distance between the two pickups and between the two
+            deliveries. Our nodes carry no metric, so this degenerates to co-location:
+            0 when the two edges share the endpoint, 1 otherwise. Within one hop layer
+            every tail is the source, so this term is constant there by construction —
+            correctly so, those edges genuinely do start in the same place.
+    - chi   R&P's T_i is when location i is visited. Under IC the earliest a node can be
+            reached is its BFS hop from s, so hop distance *is* our time coordinate.
+            Both endpoints enter, matching their sum over pickup and delivery.
+    - psi   R&P compare capacity demand; our edge's "load" is the transmission
+            probability it carries. Already in [0,1].
+    - omega R&P's K_i is the set of vehicles that can serve request i, and they compare
+            it by overlap coefficient — min-normalised, not Jaccard, so a small set
+            contained in a large one counts as fully related. Our analogue is the
+            territory the cascade enters through the edge, i.e. the head's bounded
+            descendant set (analyse_graph.node_territories). Two cut edges are related
+            when they guard the same downstream ground.
+
+    Each raw term is scaled to [0,1] before weighting, as R&P require ("d_ij, T_x and
+    l_i are normalized such that 0 <= R(i,j) <= 2(phi+chi)+psi+omega").
+
+    This term-by-term correspondence is what lets us use R&P's own tuned
+    (phi,chi,psi,omega) = (9,3,2,5) rather than equal weights. It also fixes a measured
+    degeneracy: with the omega term missing, every pair of hop0 edges scored identically
+    on three of the four terms, leaving relatedness a function of |p_a - p_b| alone —
+    2 distinct values across 190 pairs on the out-degree-486 hub, i.e. `destroy_related`
+    was `destroy_random` with extra steps."""
     ua, va = ctx.endpoints[a]
     ub, vb = ctx.endpoints[b]
-    same_tail = 0.0 if ua == ub else 1.0
-    same_head = 0.0 if va == vb else 1.0
-    hop_a, hop_b = ctx.hop_of_edge.get(a), ctx.hop_of_edge.get(b)
-    if ctx.hop_span > 0 and hop_a is not None and hop_b is not None:
-        hop_term = abs(hop_a - hop_b) / ctx.hop_span
+    hop, span = ctx.hop_of_node, ctx.hop_span
+
+    location = (0.0 if ua == ub else 1.0) + (0.0 if va == vb else 1.0)
+    if span > 0:
+        time = (abs(hop[ua] - hop[ub]) + abs(hop[va] - hop[vb])) / span
     else:
-        hop_term = 0.0
-    prob_term = abs(ctx.probability[a] - ctx.probability[b])
-    return same_tail + same_head + hop_term + prob_term
+        time = 0.0
+    load = abs(ctx.probability[a] - ctx.probability[b])
+
+    ta, tb = ctx.territory[va], ctx.territory[vb]
+    if ta and tb:
+        servable = 1.0 - len(ta & tb) / min(len(ta), len(tb))
+    else:  # two dead ends are interchangeable; one dead end and one live edge are not
+        servable = 0.0 if not ta and not tb else 1.0
+
+    return SHAW_PHI * location + SHAW_CHI * time + SHAW_PSI * load + SHAW_OMEGA * servable
 
 
 def destroy_related(D: frozenset, q: int, ctx, evaluator, rng: random.Random) -> set:
@@ -85,9 +146,10 @@ DESTROY_REGISTRY = {
 DESTROY_OPERATORS = list(DESTROY_REGISTRY)
 
 
-def repair(heuristic: str, pool: list, D: frozenset, q: int, ctx,
-           rng: random.Random, p: float) -> set:
-    """Fill D back up to k by cutting q new edges chosen from `pool` (the active
-    hop-windowed candidates, already excluding D) under one of the six heuristics."""
+def repair(heuristic: str, pool: list, q: int, ctx, rng: random.Random, p: float) -> set:
+    """Fill the cut back up to k by choosing q new edges from `pool` under one of the six
+    heuristics. `pool` is the active hop-windowed candidate list with the current partial
+    cut already excluded — the exclusion belongs to the caller, which is why this takes no
+    `D` argument (it previously did, and never read it)."""
     scores = edge_scores(heuristic, ctx, pool, rng=rng)
     return set(select_q(pool, scores, ctx.endpoints, q, rng, p))

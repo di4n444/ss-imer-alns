@@ -21,7 +21,7 @@ import pandas as pd
 import powerlaw
 import scipy.sparse.linalg as spla
 
-from config import DATA_DIR, ER_NULL_MODEL_SEED, LOUVAIN_RESTART_SEEDS
+from config import DATA_DIR, ER_NULL_MODEL_SEED, LOUVAIN_RESTART_SEEDS, TERRITORY_DEPTH
 from create_graph import build_graph
 
 
@@ -247,6 +247,27 @@ def spectral_edge_scores(g: ig.Graph) -> dict:
         v = -v
 
     return {e.index: float(u[e.source] * v[e.target]) for e in g.es}
+
+
+def node_territories(g: ig.Graph, depth: int = TERRITORY_DEPTH) -> list:
+    """For each node, the set of nodes it can reach within `depth` hops (itself excluded).
+
+    This is the SS-IMER counterpart of R&P's K_i - the set of vehicles able to serve
+    request i - which their relatedness measure (eq. 17) compares between two requests.
+    An edge (u,v)'s "servable set" is the territory the cascade enters through it, i.e.
+    the territory of its head v. Bounded at `depth` hops for the same reason K_i is
+    bounded in R&P: the term is a similarity signal, not a reachability computation, and
+    the full descendant set of a node in an 86.7%-SCC graph is nearly the whole graph
+    for almost every node, which would make every pair look identical.
+
+    Source-independent, so it is a global feature in REPORT.md §8's sense; kept as an
+    in-memory list rather than a CSV column because it is per *node* and set-valued.
+    """
+    one_hop = [frozenset(g.neighbors(v, mode="out")) for v in range(g.vcount())]
+    reach = one_hop
+    for _ in range(depth - 1):
+        reach = [seen | frozenset(w for u in seen for w in one_hop[u]) for seen in reach]
+    return reach
 
 
 # --------------------------------------------------------------------------
