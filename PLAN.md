@@ -104,10 +104,14 @@ both); single **config module** as the only place literals/seeds live.
   - [ ] One source/k run per method family, confirm CSV schema is complete and stable.
   - [x] `k ≥ out(s)` handled as the trivial isolated case, not an error: warm start
         cuts all of hop0, sigma=1, `stop_reason="isolated"`, 0 iterations (REPORT.md §13).
-  - [ ] Confirm spectral score index alignment (REPORT.md §4/§6) — check against a
-        hand-computable small case if possible.
-  - [ ] Confirm frozen scenarios are byte-for-byte reproducible given a seed, and that
-        no code path ever mutates them (REPORT.md §7).
+  - [x] Confirm spectral score index alignment (REPORT.md §4/§6) — `test_features.py`,
+        three angles: invariance to vertex insertion order, Spearman against the
+        *measured* drop in λmax, and CSV-vs-fresh-computation. **Passes: 0.965** against
+        the pilot's 0.969-aligned / 0.15-misaligned (REPORT.md §17).
+  - [x] Confirm frozen scenarios are byte-for-byte reproducible given a seed, and that
+        no code path ever mutates them (REPORT.md §7) — `test_scenarios.py`, which also
+        checks SAA/MC independence and that the search leaves SourceContext's shared
+        tables untouched. All pass.
 
 ## Phase 2 — Experiment design & execution
 

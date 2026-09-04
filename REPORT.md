@@ -878,3 +878,55 @@ that makes §3.3's argument empirical; it goes in before the results chapter is 
   rests on PILOT_TESTS.md §23's "no winning cut ever used hop>=4", which is exactly the
   class of inherited pilot number this project has agreed not to trust. It must be
   re-derived on the calibration set (§10) rather than carried forward.
+
+## 17. Phase 1 smoke tests — the two that could have invalidated a calibration
+
+Both were still unchecked on PLAN.md's Phase 1 list, and both defend properties whose
+failure is silent. PILOT_TESTS.md §22 → §32 is this project's own precedent: a calibration
+run before the defects were found, and invalidated by them afterwards.
+
+### 17.1 Spectral index alignment — verified, and the weak result is genuine
+
+`code/test_features.py`. Three independent angles, because "it looks aligned" is what the
+pilot bug also looked like:
+
+1. **Invariance to vertex insertion order.** The graph is rebuilt with vertices added in a
+   shuffled order, so every internal index changes while the named edges do not; scores
+   per *named* edge must be unchanged. Worst relative gap **4.5e-15**. This is the pilot's
+   bug class stated as a property rather than as a number — it does not depend on knowing
+   the right answer.
+2. **The pilot's own diagnostic, reproduced.** Tong et al. (2012) derive `u_i·v_j` as a
+   first-order estimate of the drop in λmax from removing edge (i,j), so the score must
+   rank-correlate with the drop *actually measured* by deleting the edge and recomputing.
+   Over 180 edges stratified across the score range: **Spearman 0.965**, against
+   PILOT_TESTS.md §18's 0.15 when the eigenvector was indexed by name order and 0.969 once
+   aligned.
+3. **CSV vs. fresh computation.** `verify_feature_alignment` checks the CSV's endpoints
+   line up with the graph, but cannot check that the *values* came from this graph — a
+   stale CSV with correct endpoints passes it. Worst relative gap **2.3e-14**.
+
+**Consequence beyond the test.** PILOT_TESTS.md §26 forbids citing any spectral number
+from a run made before alignment was confirmed. That restriction is now lifted, and it
+settles an ambiguity in the first ALNS-vs-baseline comparison: `spectral` scored a mean
+R_mc of 0.189 there, barely above `random`'s 0.218 — with alignment verified, that is a
+**genuine property of the heuristic on this dataset**, not a misalignment artifact. It can
+be reported as a finding rather than held back as a suspect number.
+
+### 17.2 Frozen scenarios — reproducible, independent, and never mutated
+
+`code/test_scenarios.py`. Four checks, all passing:
+
+- 500 SAA scenarios reproduce **byte-for-byte** from seed 42 (adjacency order included,
+  not just set equality). Without this no two runs in the thesis are comparable —
+  PILOT_TESTS.md §8 and §24.
+- SAA (seed 42) and MC (seed 999) share **no realization**, so out-of-sample validation is
+  genuinely out of sample (REPORT.md §7).
+- Running all six baselines, the marginal-value path, and a complete ALNS search leaves
+  every scenario **bit-identical**, and the evaluator's reusable cut buffer clean. This is
+  what says the cut is applied to a mask rather than to the frozen adjacency.
+- The search does not mutate `SourceContext`'s shared tables either. `@dataclass(frozen=True)`
+  only prevents attribute rebinding; the dicts and lists inside stay mutable and every
+  operator reads them every iteration.
+
+Phase 1's remaining unchecked item is the CSV schema check, which belongs with
+`run_experiment.py` rather than before it.
