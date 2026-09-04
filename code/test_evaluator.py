@@ -91,6 +91,28 @@ def test_cache_does_not_change_answers(g, source, scenarios, ctx, cut):
     print("  cached and uncached evaluators agree")
 
 
+def test_cache_does_not_confuse_sources(g, source, scenarios, ctx, cut):
+    """One evaluator, many sources — the shape run_experiment.py wants, since the
+    scenario set is the expensive thing to build and the source is the cheap loop
+    variable. Reach depends on both the source and the cut, so a cache keyed on the cut
+    alone hands back the previous source's answer: measured at 41.10 for a source whose
+    true reach is 643.63. It raises nothing and looks entirely plausible."""
+    shared = Evaluator(g.vcount(), scenarios)
+    for other in (774, 253, 3616):
+        warm = shared.evaluate_reach(other, frozenset(), ctx.endpoints)
+        cold = Evaluator(g.vcount(), scenarios).evaluate_reach(
+            other, frozenset(), ctx.endpoints)
+        assert warm == cold, (
+            f"source {other}: shared evaluator gave {warm:.2f}, fresh one {cold:.2f} — "
+            f"the cache is keyed on the cut without the source"
+        )
+        _, gains = shared.marginal_values(other, cut, ctx.endpoints)
+        _, fresh_gains = Evaluator(g.vcount(), scenarios).marginal_values(
+            other, cut, ctx.endpoints)
+        assert gains == fresh_gains, f"source {other}: marginal cache collides too"
+    print("  one evaluator across several sources agrees with per-source evaluators")
+
+
 def test_scenario_sampler_matches_declared_probabilities(g, source, scenarios, ctx, cut):
     """PILOT_TESTS.md §36: check the realised edge-occupancy frequency across scenarios
     against each edge's declared probability. If the sampler drifts, every sigma in the
@@ -120,6 +142,7 @@ if __name__ == "__main__":
     for test in (test_matches_igraph_reachability, test_marginals_match_naive,
                  test_cut_buffer_is_left_clean, test_cutting_more_never_increases_reach,
                  test_cache_does_not_change_answers,
+                 test_cache_does_not_confuse_sources,
                  test_scenario_sampler_matches_declared_probabilities):
         test(*fixture)
     print("all passed")

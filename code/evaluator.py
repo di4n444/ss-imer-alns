@@ -122,8 +122,15 @@ class Evaluator:
         """Mean reach across this evaluator's bound scenario set."""
         D = D if isinstance(D, frozenset) else frozenset(D)
         cache = self.cache
+        # Keyed by (source, cut), never the cut alone: reach is a property of both, and
+        # one evaluator is deliberately reusable across sources (the scenario set is the
+        # expensive thing to build). Keying on D alone silently returned the previous
+        # source's answer - measured at sigma=41.10 for a source whose true sigma is
+        # 643.63. Nothing crashes; the number is just wrong. Same bug class as
+        # PILOT_TESTS.md §35 D5, one level down.
+        key = (source, D)
         if cache is not None:
-            hit = cache.get(D)
+            hit = cache.get(key)
             if hit is not None:
                 return hit
 
@@ -138,7 +145,7 @@ class Evaluator:
 
         value = total / len(self.scenarios)
         if cache is not None:
-            cache[D] = value
+            cache[key] = value
         return value
 
     def marginal_values(self, source: int, D, endpoints: dict) -> tuple:
@@ -151,8 +158,9 @@ class Evaluator:
         percolation here, its tail u is in R, and its head v is not — and only then is
         any traversal done, exploring strictly new territory."""
         D = D if isinstance(D, frozenset) else frozenset(D)
+        key = (source, D)  # see evaluate_reach: never key on the cut alone
         if self._marginal_cache is not None:
-            hit = self._marginal_cache.get(D)
+            hit = self._marginal_cache.get(key)
             if hit is not None:
                 return hit
 
@@ -182,6 +190,6 @@ class Evaluator:
         n = len(self.scenarios)
         result = (base_total / n, {eid: g / n for eid, g in gains.items()})
         if self.cache is not None:
-            self.cache[D] = result[0]  # the base reach is exactly sigma(D)
-            self._marginal_cache[D] = result
+            self.cache[key] = result[0]  # the base reach is exactly sigma(D)
+            self._marginal_cache[key] = result
         return result
