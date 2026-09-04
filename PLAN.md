@@ -51,10 +51,17 @@ both); single **config module** as the only place literals/seeds live.
       coin flips; only the structure the hot loop consumes is plain Python. Two
       disjoint, separately seeded sets: SAA (500) and MC (2000), counts taken from the
       thesis's own Ch.4 text. Nothing downstream mutates these.
-- [ ] **`greedy_baseline.py`** — one baseline per heuristic, hop0-only candidates
+- [x] **`greedy_baseline.py`** — one baseline per heuristic, hop0-only candidates
       (edges directly incident to `s`), deterministic `topk` path. No ALNS-specific
       logic here at all. This restriction is the whole point of the baseline — it's
       what ALNS is being compared against, see REPORT.md §7 on the Level-2 reframing.
+      Returns a `run_alns`-shaped dict so orchestration writes one CSV row per method
+      without special-casing, plus the tie diagnostics REPORT.md §3 asks for — the
+      tied group straddling rank k, where the deterministic (u, v) rule rather than the
+      heuristic decides. Already earning its keep: `bridge` at source 1 / k=20 takes 20
+      edges out of a 240-edge tied group.
+      **A sigma-greedy is deliberately not here** — that is Kimura's own proposed method
+      and the stronger opponent, deferred with its cost analysis in REPORT.md §15.
 - [x] **`operators.py`** — destroy (random / worst / related-Shaw) and repair (the six
       scorers) as two independently weighted families with one uniform signature each,
       dispatched through `DESTROY_REGISTRY` instead of kwargs plumbing. Grounded in
@@ -85,7 +92,11 @@ both); single **config module** as the only place literals/seeds live.
       to 495% on enumerable instances, versus 8/8 optimal with the horizon held at
       hop0. Replaced by the hop-scope roulette wheel — 4/4 optimal, and it learns that
       hop0 pays most rather than being told. Full diagnosis in REPORT.md §12.
-      `fixed_hop_scope=` pins a single layer, which is the Level-2 ablation.
+      `fixed_hop_scope=` pins a single layer. **Decided: this is not part of the
+      experiment matrix** — a winning cut generally contains at least one hop0 edge, so
+      hop0-only-vs-hop2-only is not where the evidence lies; Level 2 is answered by
+      `hop_mix` / `best_hits_by_hop` on the adaptive runs (REPORT.md §16). Kept as a
+      diagnostic knob.
 - [ ] **`run_experiment.py`** — config-driven orchestration; one CSV row per
       (source, k, method) run; never a column that puts ALNS in its own comparison pool.
 - [ ] **Smoke tests** (small, run before Phase 2 starts):

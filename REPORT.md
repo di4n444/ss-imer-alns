@@ -780,3 +780,101 @@ Stated here so the thesis can list them honestly rather than claiming unqualifie
 `pdftotext`/poppler is not installed on this machine, which is why an earlier attempt to
 quote eq. (17) failed. `pypdf` extracts it fine and is installed outside the project
 (not in `requirements.txt`, not in `.venv`) since it is a reading tool, not a dependency.
+
+## 15. What the baseline set should be — read from Kimura, Castiglioni and Tong
+
+### 15.1 Kimura's "proposed method" is a sigma-greedy; our six are his *baselines*
+
+Read from the PDF directly. Kimura et al. (2008)'s algorithm for contamination
+minimization is:
+
+```
+4. for i = 0 to k−1 do
+5.    Choose a link e* ∈ E_i minimizing c(G_i(e)),  (e ∈ E_i)
+6.    D_{i+1} ← D_i ∪ {e*}
+```
+
+Step 5 is *inside* the loop and evaluates on `G_i`, the graph with everything blocked so
+far already removed — so it is a **sequential greedy over the measured objective, with
+re-evaluation at every step**, not a one-shot top-k by score.
+
+His comparison methods are, verbatim: *"two heuristics based on the well-studied notions
+of betweenness and out-degree… as well as the crude baseline of blocking links at
+random."* He beats them decisively — 41% vs 30% contamination reduction against
+betweenness, and roughly 100x more effective than out-degree and random.
+
+**Consequence for Chapter 6.** Our six topological baselines are (a superset of) the set
+Kimura published as the *weak* methods. The method he actually proposed — the one a
+reader of this literature expects to see — is currently absent from our comparison. This
+does not invalidate the six; they answer "can ALNS beat a fixed topological criterion?",
+which is our Level-1 question and is worth answering. But the thesis should say plainly
+that the comparison set is heuristic baselines, and it should not imply that beating them
+is beating the state of the art. Chapter 3.3 additionally argues that step-by-step greedy
+methods "mogu zakazati u hvatanju sinergije više bridova" — an argument about a
+sigma-greedy that we do not run, so as written it is cited rather than demonstrated.
+
+Two details worth carrying into the text:
+
+- **Kimura's betweenness baseline recalculates.** He uses Newman–Girvan: remove the
+  highest-betweenness link, recompute all scores, repeat. Ours is one-shot top-k on a
+  static, source-rooted score. Defensible (REPORT.md §8 forbids recomputation in the
+  loop, and source-rooted betweenness is the right notion for a fixed source), but state
+  it as a difference rather than leave it looking like an oversight.
+- **His conclusion independently backs our degree finding**: *"unlike the task of removing
+  nodes, the strategy of blocking links between nodes with high out-degrees is not
+  necessarily effective for our problem."* PILOT_TESTS.md §23/§25 found the same thing on
+  Bitcoin Alpha empirically; now it has a citation behind it rather than standing alone.
+
+### 15.2 Castiglioni has no experiments at all
+
+Checked: the paper is purely theoretical and closes with *"theoretical and experimental
+analysis of the problems on realistic networks would be of extreme interest"* — i.e. they
+ran none. There is no baseline to inherit and no experimental protocol to match. §1's
+framing (hardness result and domain motivation only) is correct as written.
+
+**Tong et al. (2012)** optimise the leading eigenvalue, not sigma, so their baselines are
+eigenvalue-driven and do not transfer. Already how §1 treats them.
+
+### 15.3 Kimura's efficiency trick does not survive our probability distribution
+
+His eq. (6) estimates `c(G_i(e))` as the average of φ over only those sampled scenarios in
+which `e` was **unoccupied** — exact under edge independence, one pass, no per-candidate
+re-simulation. That is what makes his greedy affordable.
+
+It does not port to Bitcoin Alpha. The estimator's effective sample size is
+`(1 − p_e)·M`. Kimura used a single uniform propagation probability (p = 0.2 on the blog
+network, 0.03 on Wikipedia), so every candidate kept 80–97% of the sample. Our `p` spans
+ten values up to 0.993 (PILOT_TESTS.md §30), where the estimator retains **~3.5 of 500
+scenarios** — and high-`p` edges are precisely the ones most worth cutting. Porting his
+method to a heterogeneous-`p` network is a genuine finding, not just an implementation
+detail, and belongs in the text if the sigma-greedy is built.
+
+The fix keeps his insight without the sample loss: blocking `e` changes a scenario only if
+`e` was occupied in it, so
+
+```
+sigma(D ∪ {e}) = (1/M)[ Σ_{m: e absent} reach_m(D) + Σ_{m: e present} reach_m(D ∪ {e}) ]
+```
+
+The first sum is free from a single base pass; only the second needs recomputation, on a
+`p_e` fraction of scenarios. Exact, full sample. Estimated cost hop0-only: ~5 s for a
+small source (out=9, k=5), ~2.7 min for the out-degree-486 hub at k=20, against ~25 min
+naive. Being deterministic, it would be computed once per (source, k) and reused across
+ALNS seeds (PILOT_TESTS.md §19).
+
+**Decision: deferred, not dropped.** The six heuristic baselines go first, since they are
+what the Level-1 question needs. The sigma-greedy is the stronger opponent and the one
+that makes §3.3's argument empirical; it goes in before the results chapter is written.
+
+## 16. Two settled scope decisions
+
+- **No `fixed_hop_scope` ablation.** A winning cut will in general contain at least one
+  hop0 edge, so a hop0-only-versus-hop2-only comparison is not where this thesis's
+  evidence lies; the Level-2 question is answered by `hop_mix` and `best_hits_by_hop` on
+  the adaptive runs (§14.2). `fixed_hop_scope=` stays in `run_alns` as a diagnostic knob
+  but is not part of the experiment matrix. This also retires the open question about the
+  ablation's warm start being drawn from hop0 regardless of the pinned layer.
+- **`ALNS_MAX_HOP_SCOPE = 3` is a calibration parameter, not a finding.** It currently
+  rests on PILOT_TESTS.md §23's "no winning cut ever used hop>=4", which is exactly the
+  class of inherited pilot number this project has agreed not to trust. It must be
+  re-derived on the calibration set (§10) rather than carried forward.
