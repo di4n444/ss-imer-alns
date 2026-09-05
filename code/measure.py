@@ -25,7 +25,8 @@ import time
 
 import pandas as pd
 
-from config import ALNS_RUN_SEED, DATA_DIR, SAMPLE_OUT_DEGREE_BANDS
+from config import (ALNS_MAX_ITER, ALNS_RUN_SEED, DATA_DIR,
+                    SAMPLE_OUT_DEGREE_BANDS)
 from run_experiment import Workbench, run_cell
 
 # Wall-clock cap. The driver checks it between cells and stops cleanly rather than
@@ -227,8 +228,71 @@ def final():
     return frame
 
 
+# Experiment F: the same instances searched longer. max_iter is fixed at 300 regardless of
+# k or fan-out, and two probes showed that starves the larger budgets badly. The rule is
+# linear in k, since k is what sets the size of the solution being assembled, and capped so
+# the deepest budget of the hub sweep stays affordable. No stagnation rule is added: R&P
+# stop on a fixed iteration count and nothing else, and inventing an early exit here would
+# also truncate the cooling schedule, which is derived from max_iter.
+RERUN_ITERATIONS = lambda k: min(100 * k, 2000)
+RERUN_CELLS = 50
+
+
+def rerun_cells(results, sample):
+    """Half the cells, chosen so no two are the same scenario twice.
+
+    One cell per (stratum, budget) pair - keeping the cheapest - which is what drops the
+    near-duplicates: four sources from the same band at the same k answer the same question
+    four times. Selection is entirely structural; nothing looks at how any method scored."""
+    cells = (results[results.method == "alns"][["source", "k", "tag"]]
+             .drop_duplicates()
+             .merge(sample[["source", "cell"]].drop_duplicates(), on="source"))
+    cells = cells[~cells.tag.astype(str).str.startswith("probe")]
+    seconds = results[results.method == "alns"].groupby(["source", "k"]).seconds.first()
+    cells["seconds"] = cells.set_index(["source", "k"]).index.map(seconds)
+
+    unique = (cells.sort_values("seconds")
+                   .drop_duplicates(subset=["cell", "k"], keep="first"))
+    return unique.nsmallest(RERUN_CELLS, "seconds")
+
+
+def rerun():
+    started = time.time()
+    results = pd.read_csv(DATA_DIR / "results.csv")
+    sample = pd.read_csv(DATA_DIR / "sample.csv")
+    chosen = rerun_cells(results, sample)
+
+    predicted = sum(row.seconds * RERUN_ITERATIONS(int(row.k)) / ALNS_MAX_ITER
+                    for _, row in chosen.iterrows())
+    print(f"{len(chosen)} cells, ~{predicted / 60:.0f} min predicted "
+          f"(was {chosen.seconds.sum() / 60:.1f} min at {ALNS_MAX_ITER})")
+
+    bench = Workbench()
+    rows = []
+    for n, (_, row) in enumerate(chosen.iterrows(), start=1):
+        source, k = int(row.source), int(row.k)
+        iterations = RERUN_ITERATIONS(k)
+        cell_started = time.time()
+        ev_saa, ev_mc = bench.evaluators(source)
+        produced = run_cell(bench.context(source), k, ev_saa, ev_mc,
+                            seeds=(ALNS_RUN_SEED,), baselines=False,
+                            alns_params={"max_iter": iterations}, tag="scaled")
+        rows += produced
+        pd.DataFrame(rows).to_csv(DATA_DIR / "results_scaled.csv", index=False)
+        before = results[(results.source == source) & (results.k == k)
+                         & (results.method == "alns")].R_mc.iloc[0]
+        print(f"[{n:>2}/{len(chosen)}] source {source:>5} k={k:<3} {iterations:>4} iter: "
+              f"{before:+.3f} -> {produced[0]['R_mc']:+.3f}  "
+              f"{time.time() - cell_started:>5.1f}s (total {(time.time()-started)/60:.1f}m)")
+
+    print(f"\nwrote {len(rows)} rows to data/results_scaled.csv, "
+          f"{(time.time() - started) / 60:.1f} min")
+
+
 if __name__ == "__main__":
-    if "--final" in sys.argv:
+    if "--rerun" in sys.argv:
+        rerun()
+    elif "--final" in sys.argv:
         final()
     else:
         main(pilot="--pilot" in sys.argv)

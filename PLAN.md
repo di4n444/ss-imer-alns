@@ -82,8 +82,8 @@ measurement gets truncated rather than slowed.
 `code/measure.py`. See REPORT §7a for what each tag holds and how the methods may
 and may not be compared.
 
-**Phase 3 (thesis) — chapters 1–6 written.** Everything up to the results chapter is
-drafted; 7 waits on the measurement runs.
+**Phase 3 (thesis) — chapters 1–6 written, 7 and 8 outstanding.** The measurement is
+finished, so chapter 7 has everything it needs in `data/results.csv`.
 
 ### Done
 
@@ -140,10 +140,12 @@ Chapters, in the agreed structure:
       of REPORT §II.5 is named in 5.1 as the next step, so it has to appear here.
 - [ ] Zaključak, Sažetak, Summary
 
-All figures for chapters 1–6 exist: `fig1_1` ER/WS/BA, `fig1_2` live-edge, `fig2_1`
+All figures for chapters 1–6 exist (13): `fig1_1` ER/WS/BA, `fig1_2` live-edge, `fig2_1`
 degree distribution, `fig2_2` probability distribution, `fig2_3` bow-tie, `fig2_4` source
-population, `fig3_1` choke point, `fig5_1` ALNS loop, `fig5_2` hop layers, `fig6_1`
-pipeline.
+reach, `fig2_5` out-degree composition, `fig3_base/near/choke` the choke-point sequence,
+`fig5_1` ALNS loop, `fig5_2` hop layers, `fig6_1` pipeline. Chapter 7 needs its own, drawn
+from `data/results.csv`; draw them at their printed width with body-sized type, as
+`thesis/figures.py` explains, or the lettering is unreadable on A4.
 
 **Structure is fixed and subsections are not to be added.** The agreed outline above is
 what the chapters follow; the first draft grew extra subsections for design dilemmas and
