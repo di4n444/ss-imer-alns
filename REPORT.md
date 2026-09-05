@@ -930,3 +930,77 @@ be reported as a finding rather than held back as a suspect number.
 
 Phase 1's remaining unchecked item is the CSV schema check, which belongs with
 `run_experiment.py` rather than before it.
+
+## 18. The source population — measured, and it changed the sampling design
+
+`code/source_profile.py` → `data/source_profile.csv`: out-degree, in-degree, deterministic
+reachability and SAA σ₀ for all 3683 nodes, 120 s for the whole graph. PLAN.md Phase 2
+cannot draw a sample before this exists, because PILOT_TESTS.md §1 requires stratifying on
+**reach**, not centrality — topologically distinct nodes there turned out to share a
+cascade reach to the decimal, since they land in the same live-edge SCC.
+
+### 18.1 Reach is a smooth heavy-tailed continuum, not bimodal
+
+We expected two modes (a saturated class near σ₀ ≈ 643 and everything else), on the
+strength of five hand-picked sources and PILOT_TESTS.md §20. Measured deciles over the
+3272 sources with out-degree ≥ 1:
+
+| decile | 0% | 10% | 20% | 30% | 40% | 50% | 60% | 70% | 80% | 90% | 100% |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| σ₀ | 1.0 | 4.6 | 10.0 | 14.0 | 22.5 | 35.8 | 66.0 | 127.8 | 323.3 | 598.3 | 653.2 |
+
+**46.6% of eligible sources sit between σ₀ 10 and 100**, and only ~16% are saturated at
+400+. PILOT §20's "~17% saturated" was right; the claim that the rest forms a second mode
+was not. So "low / mid / high reach" is a real three-way split, just not the one assumed.
+
+**This invalidates the informal ALNS-vs-baseline comparison run before the profile
+existed** (8 cells, 3 of 5 sources saturated — 60% against a population rate of 16%). Its
+"3 better / 3 same / 2 worse" is not a population estimate, and both ALNS losses fell in
+the over-represented saturated regime. Do not carry that headline forward.
+
+### 18.2 Most of the graph cannot be a source at all
+
+- **411 of 3683 nodes have out-degree 0.** No out-edges, σ = 1 with an empty cut. Handled
+  as the isolated case rather than crashed (REPORT.md §13), but they are not instances.
+- **A further 2088 have out-degree 1–3.** Since `k ≥ out(s)` is the trivial isolated case,
+  these cannot support even k = 3.
+
+So the usable population for the smallest budget studied is **1184 sources, 32% of the
+graph** — dropping to 500 for k = 10 and 230 for k = 20. That bound belongs in the thesis:
+it constrains what "a randomly chosen source" can mean on this dataset, and it is a
+property of Bitcoin Alpha's degree distribution (§5's heavy tail), not of our method.
+
+### 18.3 Out-degree × reach, and why both axes are needed
+
+| out-degree | sources | low-reach | saturated | median σ₀ | supports |
+|---|---|---|---|---|---|
+| [1,4) | 2088 | 1975 | 113 | 16.4 | k ≤ 2 only |
+| [4,10) | 684 | 588 | 96 | 90.6 | k=3 |
+| [10,20) | 270 | 158 | 112 | 344.2 | k=3, 10 |
+| [20,50) | 155 | 33 | 122 | 599.4 | k=3, 10, 20 |
+| [50,∞) | 75 | 1 | 74 | 643.6 | all |
+
+Out-degree predicts reach strongly but not deterministically — 5% of the smallest band is
+saturated against 99% of the largest — which is exactly why stratifying on one axis alone
+would be wrong. Two consequences:
+
+- **At the top the axes collapse**: out-degree ≥ 50 is 99% saturated, so "hub" and
+  "saturated" are nearly the same stratum there, and the out ≥ 50 low-reach cell has
+  exactly **one** member in the entire graph and cannot be sampled.
+- **The off-diagonal cells are the interesting ones for Level 2**: the 96 sources with
+  out ∈ [4,10) and 112 with out ∈ [10,20) that are nonetheless saturated have few gateways
+  feeding the giant component. That is the redundant-fan-out geometry §8c describes, and
+  where hop0-only quarantine should struggle most.
+
+### 18.4 The sample
+
+`code/sample_sources.py` → `data/sample.csv`, drawn once under `SOURCE_SAMPLE_SEED`,
+calibration taken first and measurement from the remainder so the two are disjoint by
+construction rather than by discipline (PILOT_TESTS.md §35 B7, which exists because the
+pilot audit found three samples in circulation). 7 viable cells × (2 calibration + 4
+measurement) = **15 calibration + 28 measurement sources**.
+
+Each row carries `predicted_seconds` from §11's cost model, so an experiment plan can be
+costed before it is run rather than discovered to have overrun. One ALNS run over the full
+measurement set is ~992 s; over the calibration set ~496 s. That is the number that makes
+a 30-minute calibration a design constraint rather than a detail (§19).

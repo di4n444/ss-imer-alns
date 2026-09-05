@@ -97,11 +97,19 @@ both); single **config module** as the only place literals/seeds live.
       hop0-only-vs-hop2-only is not where the evidence lies; Level 2 is answered by
       `hop_mix` / `best_hits_by_hop` on the adaptive runs (REPORT.md §16). Kept as a
       diagnostic knob.
-- [ ] **`run_experiment.py`** — config-driven orchestration; one CSV row per
+- [x] **`run_experiment.py`** — config-driven orchestration; one CSV row per
       (source, k, method) run; never a column that puts ALNS in its own comparison pool.
+      `run_cell` is the shared core used by both the calibration driver and the eventual
+      measurement sweep; `Workbench` builds the graph, both scenario sets and the
+      per-source contexts once. Every row carries both σ's, their gap, and every resolved
+      ALNS parameter (PILOT_TESTS.md §37). To vary a parameter is to pass an override to
+      `run_alns`, never to take a different code path.
 - [ ] **Smoke tests** (small, run before Phase 2 starts):
   - [ ] Reproduce topology numbers once and freeze them into REPORT.md §5.
-  - [ ] One source/k run per method family, confirm CSV schema is complete and stable.
+  - [x] One source/k run per method family, confirm CSV schema is complete and stable —
+        `run_experiment.py`'s `__main__`. 38 columns, all populated except
+        `param_fixed_hop_scope`, which is correctly empty since that knob is out of the
+        matrix (REPORT.md §16).
   - [x] `k ≥ out(s)` handled as the trivial isolated case, not an error: warm start
         cuts all of hop0, sigma=1, `stop_reason="isolated"`, 0 iterations (REPORT.md §13).
   - [x] Confirm spectral score index alignment (REPORT.md §4/§6) — `test_features.py`,
@@ -115,8 +123,14 @@ both); single **config module** as the only place literals/seeds live.
 
 ## Phase 2 — Experiment design & execution
 
-- [ ] Decide source sample: stratify by reach level (low/mid/high) and/or out-degree
+- [x] Decide source sample: stratify by reach level (low/mid/high) and/or out-degree
       band; disjoint calibration set vs. measurement/showcase set.
+      `source_profile.py` measures reach for every node first — the population turned out
+      **not** to be bimodal, so the design changed (REPORT.md §18). `sample_sources.py`
+      then draws 15 calibration + 28 measurement sources over 7 (out-degree × reach)
+      cells into `data/sample.csv`, one seed, disjoint by construction. Also established:
+      only 1184 of 3683 nodes can support k=3 at all, and the out≥50 low-reach cell has
+      exactly one member in the whole graph.
 - [ ] **Calibrate ALNS defaults on the calibration set, immediately after Phase 1 smoke
       tests pass, before any measurement/showcase run.** Document the process itself
       (values tried, selection metric, final defaults, RNG sensitivity) into REPORT.md
