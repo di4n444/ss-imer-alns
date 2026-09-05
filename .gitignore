@@ -4,3 +4,7 @@ __pycache__/
 .DS_Store
 
 # generated thesis draft (lives beside the source .docx, not in the repo)
+
+# run logs: transient, and the CSV is the record
+data/*.log
+data/schema_check.csv

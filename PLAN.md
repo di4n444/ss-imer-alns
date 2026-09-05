@@ -69,8 +69,8 @@ The nacrt is regenerated from scratch on every build, so:
 - Once the text is final and the build is retired, the nacrt can be edited directly in
   Word like any document.
 
-Tests and the calibration compete for CPU; do not run them at the same time, since the
-calibration enforces a wall-clock budget and would truncate.
+Long runs enforce a wall-clock budget, so do not run the tests alongside one - the
+measurement gets truncated rather than slowed.
 
 ---
 

@@ -342,11 +342,26 @@ hindsight, separately for every instance — and is not a method anyone could de
 useful as an upper bound, but a table that leads with it understates ALNS for the same
 reason §6 forbids a column that pools a method with its own competitors.
 
-On the first 43 cells ALNS beat five of the six criteria decisively (mean difference in
-out-of-sample R between +0.16 and +0.44) and drew with the strongest, `probability`
-(−0.005). Split by budget, that draw resolves: ALNS leads at moderate budgets and falls
-behind at k = 20, which is only the saturated hubs. Recompute all of this from the full
-100-cell file rather than trusting these figures.
+Over the 95 comparison cells (better / tied / worse, and the mean difference in
+out-of-sample R):
+
+| criterion | record | mean |
+|---|---|---|
+| bridge | 91 / 3 / 1 | +0.482 |
+| random | 92 / 1 / 2 | +0.445 |
+| betweenness | 82 / 9 / 4 | +0.240 |
+| spectral | 81 / 11 / 3 | +0.216 |
+| degree | 80 / 9 / 6 | +0.212 |
+| probability | 60 / 13 / 22 | +0.016 |
+
+Mean R: ALNS 0.650, probability 0.637, then a clear gap to degree at 0.440. The SAA−MC gap
+has median +0.016. **Recompute all of this from the CSV rather than quoting these figures**
+— they are here to say what shape the answer takes, not to be copied into the thesis.
+
+A caution learned twice on this run: a partial or differently-composed set of cells gives a
+materially different picture. At 43 cells ALNS merely drew with `probability` (−0.005),
+because that set was dominated by hub cells at budgets too small for any method. Never
+report a subset as though it estimated the whole.
 
 **Trivial and near-trivial cells.** `stop_reason == "isolated"` marks instances solved in
 closed form. Cells where several methods all reach R ≈ 0.97 are not marked but flatter
