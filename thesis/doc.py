@@ -15,6 +15,7 @@ section moves.
 """
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
 from docx.shared import Cm, Pt
 
 import bibliography as bib
@@ -57,11 +58,9 @@ class Thesis:
         the Heading style, so a generated heading only joins the numbering sequence if it
         carries the same `numPr` as the template's own headings. Uvod, Zaključak and
         Literatura deliberately go without."""
-        from copy import deepcopy
         paragraph = self.d.add_paragraph(text, style=f"Heading {level}")
-        source = self.numbering.get(level)
-        if numbered and source is not None:
-            paragraph._p.get_or_add_pPr().append(deepcopy(source))
+        if not numbered:
+            _suppress_numbering(paragraph)
         return self._place(paragraph)
 
     def h1(self, text: str, numbered: bool = True):
@@ -86,7 +85,16 @@ class Thesis:
 
     @staticmethod
     def _cited(parts):
-        return [bib.expand(part) if isinstance(part, str) else part for part in parts]
+        """Resolve citations inside text, preserving whether a part is italic."""
+        out = []
+        for part in parts:
+            if isinstance(part, M.Italic):
+                out.append(M.Italic(bib.expand(str(part))))
+            elif isinstance(part, str):
+                out.append(bib.expand(part))
+            else:
+                out.append(part)
+        return out
 
     def bullets(self, items, numbered: bool = False):
         """A list. The template defines no list styles, so items are indented paragraphs
@@ -145,6 +153,20 @@ class Thesis:
         return f"Sl. {self._next_figure_number(label)}"
 
 
+def _suppress_numbering(paragraph):
+    """Turn numbering off for one heading that shares a numbered style. A numId of 0 is
+    the OOXML way to say "this paragraph opts out"."""
+    from docx.oxml.ns import qn
+    pPr = paragraph._p.get_or_add_pPr()
+    for existing in pPr.findall(qn("w:numPr")):
+        pPr.remove(existing)
+    off = OxmlElement("w:numPr")
+    ilvl = OxmlElement("w:ilvl"); ilvl.set(qn("w:val"), "0")
+    numId = OxmlElement("w:numId"); numId.set(qn("w:val"), "0")
+    off.append(ilvl); off.append(numId)
+    pPr.append(off)
+
+
 def base_style(document):
     """Times New Roman 12 pt, 1.5 spacing, as the template requires."""
     normal = document.styles["Normal"]
@@ -195,3 +217,29 @@ def capture_heading_numbering(document):
         if numPr is not None:
             found[level] = numPr
     return found
+
+
+def numbering_into_heading_styles(document, numbering, unnumbered=()):
+    """Move chapter numbering from individual paragraphs into the Heading styles.
+
+    With the numbering on the style, a heading typed by hand in Word later joins the
+    sequence automatically, which is not true when each heading carries its own `numPr`.
+    The headings that must stay unnumbered - the abstract pages, Uvod, Zakljucak,
+    Literatura - then need an explicit override, since they share the same style: a
+    `numId` of 0 switches numbering off for that paragraph only.
+    """
+    from copy import deepcopy
+
+    from docx.oxml.ns import qn
+
+    for level, numPr in numbering.items():
+        style = document.styles[f"Heading {level}"]
+        pPr = style.element.get_or_add_pPr()
+        for existing in pPr.findall(qn("w:numPr")):
+            pPr.remove(existing)
+        pPr.append(deepcopy(numPr))
+
+    titles = set(unnumbered)
+    for p in document.paragraphs:
+        if p.style.name.startswith("Heading") and p.text.strip() in titles:
+            _suppress_numbering(p)

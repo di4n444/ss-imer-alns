@@ -33,6 +33,11 @@ def main():
     numbering = doc.capture_heading_numbering(document)
     doc.clear_body(document, "Uvod", "Literatura")
 
+    doc.numbering_into_heading_styles(
+        document, numbering,
+        unnumbered=("Sažetak", "Summary", "Sadržaj", "Uvod", "Zaključak", "Literatura",
+                    "Izjava o korištenju umjetne inteligencije"))
+
     thesis = doc.Thesis(document, marker_heading="Literatura", numbering=numbering)
     for name in CHAPTERS:
         module = __import__(name)

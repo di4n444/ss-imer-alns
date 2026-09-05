@@ -229,6 +229,18 @@ def add_inline(paragraph, *items):
     paragraph._p.append(omath(*items))
 
 
+class Italic(str):
+    """Plain italic text: a foreign term, a problem name, a book title.
+
+    These are words, not mathematics, so they must not become equation objects - an
+    English term set as an OMML run is typeset in a maths font and cannot be spell-checked
+    or edited as text."""
+
+
+def i(text: str) -> "Italic":
+    return Italic(text)
+
+
 def para(container, *parts, style=None):
     """A paragraph mixing prose and mathematics.
 
@@ -242,7 +254,9 @@ def para(container, *parts, style=None):
     """
     paragraph = container.add_paragraph(style=style)
     for part in parts:
-        if isinstance(part, str):
+        if isinstance(part, Italic):
+            paragraph.add_run(str(part)).italic = True
+        elif isinstance(part, str):
             paragraph.add_run(part)
         else:
             add_inline(paragraph, part)

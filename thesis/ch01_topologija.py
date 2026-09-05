@@ -11,7 +11,7 @@ epidemic thresholds.
 """
 
 import omml as M
-from omml import delim, frac, sub, sup, up, v
+from omml import delim, frac, i, sub, sup, up, v
 
 
 def mean_k():
@@ -54,13 +54,25 @@ def _uvod(t):
         "društvenim mrežama {coro2021}, pa i u ekologiji, kroz metapopulacijsko modeliranje za "
         "strateško povezivanje ugroženih staništa {sheldon2010}.")
 
-    t.p("U ovom se radu razmatra minimizacija utjecaja iz jednog fiksiranog izvora ciljanim "
-        "uklanjanjem bridova, u literaturi poznata kao ", up("Single-Source Influence "
-        "Minimization by Edge Removal"), " (SS-IMER). Rani pristupi kontroli širenja "
-        "oslanjali su se na uklanjanje čvorova {albert2000}, no u stvarnim je sustavima brisanje "
-        "korisničkih računa često pravno, poslovno ili etički neizvedivo. Uklanjanje "
-        "bridova blaža je intervencija koja mijenja topologiju bez uklanjanja samih aktera "
-        "{tong2012}, pa je zato i praktično privlačnija.")
+    t.p("U ovom se radu razmatra minimizacija utjecaja ciljanim uklanjanjem bridova. "
+        "{~castiglioni2021} taj problem definiraju pod nazivom ",
+        i("Influence-Minimization-by-Edge-Removal"), " (IMER): za zadani graf, skup "
+        "početnih čvorova i proračun ", v("B"), ", traži se skup od najviše ", v("B"),
+        " bridova čije uklanjanje najviše smanjuje broj čvorova do kojih informacija "
+        "dopre. Ovdje se razmatra uža varijanta toga problema, u kojoj je početni čvor "
+        "jedan jedini i fiksiran, a proračun se troši u cijelosti. Radi kratkoće se u "
+        "nastavku koristi oznaka SS-IMER (", i("Single-Source IMER"), "). Prefiks "
+        "SS-, kao i sama oznaka, uvedeni su u ovom radu prema uobičajenoj konvenciji "
+        "imenovanja inačica optimizacijskih problema i nisu ustaljen naziv u literaturi.")
+
+    t.p("Rani pristupi kontroli širenja oslanjali su se na uklanjanje čvorova "
+        "{albert2000}, no u stvarnim je sustavima brisanje korisničkih računa često "
+        "pravno, poslovno ili etički neizvedivo. Uklanjanje bridova blaža je intervencija "
+        "koja mijenja topologiju bez uklanjanja samih aktera {tong2012}, pa je zato i "
+        "praktično privlačnija. Najbliži je algoritamski predak ovoga rada problem "
+        "minimizacije kontaminacije {kimura2008}, u kojem se pod istim modelom širenja "
+        "blokiraju bridovi, ali se doseg usrednjava preko svih čvorova kao mogućih izvora, "
+        "a ne promatra iz jednoga zadanog.")
 
     t.p("Za modeliranje dinamike širenja odabran je nezavisni kaskadni model (ICM), jedan "
         "od najčešće proučavanih modela difuzije {kempe2003}. Rješenje se eksperimentalno "
@@ -72,8 +84,7 @@ def _uvod(t):
         "doprinos pojedinog brida u pravilu nije submodularan zbog topološke redundantnosti "
         "i alternativnih staza. Pohlepne metode koje bridove biraju jedan po jedan zato ne "
         "hvataju sinergiju više istodobnih uklanjanja. Kako bi se ta prepreka premostila, "
-        "u radu se implementira i prilagođava metaheuristika ", up("Adaptive Large "
-        "Neighborhood Search"), " (ALNS) {ropke2006}, koja u svakoj iteraciji razara i ponovno "
+        "u radu se implementira i prilagođava metaheuristika ", i("Adaptive Large Neighborhood Search"), " (ALNS) {ropke2006}, koja u svakoj iteraciji razara i ponovno "
         "gradi cijelo rješenje umjesto da ga proširuje po jedan element.")
 
     t.p("Adaptivno učenje ALNS-a ispituje se na dvije razine. Na prvoj razini algoritam "
@@ -116,7 +127,7 @@ def _chapter(t, figures):
 def _random_to_complex(t, figures):
     t.h2("Od slučajnih do kompleksnih mreža")
 
-    t.p("Sustavno proučavanje slučajnih grafova započinju Erdős i Rényi 1960. godine {erdos1960}. "
+    t.p("Sustavno proučavanje slučajnih grafova započinju {~erdos1960}. "
         "U njihovu se modelu mreža s ", v("N"), " čvorova gradi tako da se svaki od "
         "mogućih parova čvorova poveže neovisno, s istom vjerojatnošću ", v("p"), ". "
         "Posljedica takve konstrukcije je da broj veza pojedinog čvora, njegov stupanj, "
@@ -147,8 +158,8 @@ def _random_to_complex(t, figures):
 def _small_world(t):
     t.h3("Mreže malog svijeta")
 
-    t.p("Watts i Strogatz 1998. godine primjećuju da stvarne mreže istodobno imaju dva "
-        "naizgled nespojiva svojstva {watts1998}. Prvo je visok koeficijent grupiranja ", v("C"),
+    t.p("{~watts1998} primjećuju da stvarne mreže istodobno imaju dva "
+        "naizgled nespojiva svojstva. Prvo je visok koeficijent grupiranja ", v("C"),
         ", mjera sklonosti susjeda nekog čvora da i sami budu međusobno povezani. Drugo je "
         "kratka karakteristična duljina puta ", v("L"), ", odnosno prosječna udaljenost "
         "između dva čvora u mreži. Pravilna rešetka ima visok ", v("C"), " ali i velik ",
@@ -184,9 +195,8 @@ def _small_world(t):
 def _scale_free(t):
     t.h3("Mreže bez skale")
 
-    t.p("Drugi se proboj odnosi na nejednakost u raspodjeli veza. Albert i Barabási "
-        "pokazuju da mnoge stvarne mreže imaju raspodjelu stupnjeva koja slijedi zakon "
-        "potencije {albert2002}:")
+    t.p("Drugi se proboj odnosi na nejednakost u raspodjeli veza. {~albert2002} pokazuju "
+        "da mnoge stvarne mreže imaju raspodjelu stupnjeva koja slijedi zakon potencije:")
 
     t.eq(ifunc("P", v("k")), up(" ~ "), sup(v("k"), [up("−"), v("γ")]), label="powerlaw")
 
@@ -202,11 +212,11 @@ def _scale_free(t):
         "novi čvorovi radije povezuju s čvorovima koji već imaju visok stupanj, čime "
         "povezaniji čvorovi postaju sve povezaniji.")
 
-    t.p("Asimetrija stupnjeva ima izravne posljedice na otpornost sustava. Albert, Jeong i "
-        "Barabási pokazuju da su mreže bez skale iznimno otporne na slučajne kvarove, jer "
+    t.p("Asimetrija stupnjeva ima izravne posljedice na otpornost sustava. {~albert2000} "
+        "pokazuju da su mreže bez skale iznimno otporne na slučajne kvarove, jer "
         "nasumičan gubitak čvora gotovo sigurno pogađa neki od brojnih slabo povezanih "
         "čvorova, ali su istodobno vrlo osjetljive na ciljane napade: uklanjanje malog "
-        "broja čvorišta dovodi do raspada gigantske komponente {albert2000}. Upravo je ta "
+        "broja čvorišta dovodi do raspada gigantske komponente. Upravo je ta "
         "asimetrija, u kojoj nekoliko strukturno ključnih elemenata nosi nerazmjeran dio "
         "funkcije mreže, temeljna pretpostavka ovoga rada, uz razliku što se ovdje ciljano "
         "uklanjaju bridovi, a ne čvorovi.")
@@ -216,7 +226,7 @@ def _icm(t, figures):
     t.h2("Nezavisni kaskadni model (ICM)")
 
     t.p("Za modeliranje širenja u radu se koristi nezavisni kaskadni model, koji su "
-        "formalizirali Kempe, Kleinberg i Tardos {kempe2003}. U tom se modelu svaki čvor u svakom "
+        "formalizirali {~kempe2003}. U tom se modelu svaki čvor u svakom "
         "trenutku nalazi u jednom od dva stanja, aktivnom ili neaktivnom, a prijelaz je "
         "moguć samo iz neaktivnog u aktivno stanje. Proces se odvija u diskretnim koracima "
         "prema sljedećim pravilima {kempe2003,kimura2008}:")
@@ -234,9 +244,9 @@ def _icm(t, figures):
         "Proces se zaustavlja kada u nekom koraku nema novih aktivacija.",
     ], numbered=True)
 
-    t.p("Model je stohastičan, pa je doseg kaskade slučajna veličina. Kempe i suradnici "
+    t.p("Model je stohastičan, pa je doseg kaskade slučajna veličina. {~kempe2003} "
         "pokazuju da se proces može promatrati na ekvivalentan, ali znatno pogodniji "
-        "način {kempe2003}. Budući da ishod pokušaja aktivacije preko brida ovisi samo o "
+        "način. Budući da ishod pokušaja aktivacije preko brida ovisi samo o "
         "vjerojatnosti tog brida, nije važno baca li se novčić u trenutku kada čvor ",
         v("u"), " postane aktivan ili već na samom početku procesa. Ako se svi novčići "
         "bace unaprijed, svaki se brid unaprijed proglašava propusnim ili blokiranim, čime "
@@ -258,7 +268,7 @@ def _icm(t, figures):
         "pitanje dohvatljivosti u grafu, koje se rješava pretraživanjem u širinu. Ta je "
         "ekvivalencija temelj cijeloga postupka procjene korištenog u ovom radu i "
         "detaljno se razrađuje u odjeljku 3.4. Podgraf propusnih bridova naziva se ",
-        up("live-edge"), " realizacijom, a ", t.figref("liveedge_fig"), " prikazuje jedan takav "
+        i("live-edge"), " realizacijom, a ", t.figref("liveedge_fig"), " prikazuje jedan takav "
         "primjer.")
 
     t.figure(figures / "fig1_2_live_edge.png",
@@ -285,10 +295,9 @@ def _threshold(t):
          label="hmf")
 
     t.p("Stvarni sustavi poput mreže Bitcoin Alpha imaju, međutim, fiksnu topologiju. "
-        "Castellano i Pastor-Satorras pokazuju da za takve mreže teorija srednjeg polja "
-        "zakazuje jer zanemaruje njihovu geometrijsku strukturu {castellano2010}. Wang i suradnici već "
-        "2003. godine pokazuju da je prag na proizvoljnom grafu određen najvećom vlastitom "
-        "vrijednošću ", sub(v("λ"), up("max")), " matrice susjedstva {wang2003,castellano2010}:")
+        "{~castellano2010} pokazuju da za takve mreže teorija srednjeg polja zakazuje jer "
+        "zanemaruje njihovu geometrijsku strukturu. Već {~wang2003} pokazuju da je prag na "
+        "proizvoljnom grafu određen najvećom vlastitom vrijednošću ", sub(v("λ"), up("max")), " matrice susjedstva {wang2003,castellano2010}:")
 
     t.eq(sub(v("λ"), up("c")), up(" = "), frac(up("1"), sub(v("λ"), up("max"))),
          label="spectral")
@@ -299,8 +308,7 @@ def _threshold(t):
         "pokazuje suprotno: prag ostaje strogo pozitivan i određen strukturom grafa, pri "
         "čemu je za ", v("γ"), " > 5/2 vezan uz stupanj najpovezanijeg čvorišta {castellano2010}.")
 
-    t.p("Tong i suradnici na temelju te veze predlažu ciljanu izmjenu bridova radi "
-        "smanjenja ", sub(v("λ"), up("max")), " {tong2012}. U ovom radu, međutim, cilj "
+    t.p("{~tong2012} na temelju te veze predlažu ciljanu izmjenu bridova radi smanjenja ", sub(v("λ"), up("max")), ". U ovom radu, međutim, cilj "
         "optimizacije nije ", sub(v("λ"), up("max")), ", nego očekivani doseg iz jednog "
         "izvora. Spektralna se veličina koristi isključivo kao jedan od kriterija za "
         "rangiranje bridova, što se obrazlaže u odjeljku 4.6.")
