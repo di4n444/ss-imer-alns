@@ -5,15 +5,21 @@ The template fixes the things this module enforces so no chapter has to remember
   * body text is Times New Roman 12 pt with 1.5 line spacing, on A4;
   * mathematical expressions are numbered "(n)" against the right margin and referenced
     in the text as "prema izrazu (n)" - numbering is continuous through the document;
-  * figures are numbered <poglavlje>.<redni broj u poglavlju> and referenced as "Sl. 2.1";
+  * figures are numbered <poglavlje>.<redni broj u poglavlju>, captioned *below* as
+    "Sl. 2.1 ..." and referenced in the text before they appear;
+  * tables carry the same numbering but are captioned *above*, as "Tablica 2.1 ...";
+  * code listings use the "Kôd" style and are captioned below as "Kôd 5.1 - ...";
+  * lists use the template's own "bullet1" style rather than a hand-written marker;
   * headings use the template's own Heading 1/2/3 styles, so Word's table of contents and
-    the numbering scheme keep working.
+    the numbering scheme keep working, and go no deeper than level 3, which the template
+    explicitly rules out.
 
 A `Thesis` instance carries the counters, so a chapter writes `t.eq(...)` or
 `t.figure(...)` without tracking numbers by hand and without them going stale when a
 section moves.
 """
 
+from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.shared import Cm, Pt
@@ -30,13 +36,23 @@ class Thesis:
     afterwards, means the document is in a valid order at every point and content can
     never be left stranded after the bibliography."""
 
-    def __init__(self, document, marker_heading: str = "Literatura", numbering=None):
+    def __init__(self, document, marker_heading: str = "Literatura", numbering=None,
+                 sections=None):
         self.d = document
         self.numbering = numbering or {}
         self.chapter = 0
         self._equation = 0
         self._figures = {}
+        self._tables = {}
+        self._listings = {}
+        self._level2 = 0
+        self._level3 = 0
         self.refs = {}          # label -> number, so cross-references cannot drift
+        # Section numbers resolved on a previous pass. A chapter may refer forward to a
+        # section that has not been written yet (chapter 3 points at 5.2.4), so the number
+        # cannot be known while the first pass is running - see `sec`.
+        self.sections = {}
+        self._known_sections = sections or {}
         self.marker = None
         for p in document.paragraphs:
             if p.style.name == "Heading 1" and p.text.strip() == marker_heading:
@@ -63,17 +79,46 @@ class Thesis:
             _suppress_numbering(paragraph)
         return self._place(paragraph)
 
-    def h1(self, text: str, numbered: bool = True):
+    def h1(self, text: str, numbered: bool = True, label: str = None):
         if numbered:
             self.chapter += 1
             self._figures[self.chapter] = 0
+            self._tables[self.chapter] = 0
+            self._listings[self.chapter] = 0
+            self._level2 = self._level3 = 0
+            self._record(label, str(self.chapter))
         return self._heading(text, 1, numbered)
 
-    def h2(self, text: str):
+    def h2(self, text: str, label: str = None):
+        self._level2 += 1
+        self._level3 = 0
+        self._record(label, f"{self.chapter}.{self._level2}")
         return self._heading(text, 2, True)
 
-    def h3(self, text: str):
+    def h3(self, text: str, label: str = None):
+        self._level3 += 1
+        self._record(label, f"{self.chapter}.{self._level2}.{self._level3}")
         return self._heading(text, 3, True)
+
+    def _record(self, label: str, number: str):
+        if label:
+            self.sections[label] = number
+
+    def sec(self, label: str) -> str:
+        """The number of a labelled section, e.g. "5.2.4".
+
+        Word numbers the headings itself, so the number exists only as a position in the
+        document and cannot be read back from the text. It is therefore collected on a
+        first pass and substituted on a second — which is what makes a forward reference
+        possible at all, and what stops every reference in the document from silently
+        pointing one section off when a section is inserted."""
+        try:
+            return self._known_sections[label]
+        except KeyError:
+            # First pass: the number is not known yet. Returning a marker rather than
+            # raising lets the pass finish and collect every label; build_thesis refuses
+            # to save a document that still contains one.
+            return "?.?"
 
     # -- body -------------------------------------------------------------
 
@@ -97,16 +142,48 @@ class Thesis:
         return out
 
     def bullets(self, items, numbered: bool = False):
-        """A list. The template defines no list styles, so items are indented paragraphs
-        carrying their own marker - which is also how the existing draft sets them."""
-        style = "Normal Indent" if "Normal Indent" in self._style_names() else None
+        """A list.
+
+        Unnumbered lists use the template's own "bullet1" style, which supplies the
+        bullet glyph itself - so no marker is written into the text. Numbered lists keep a
+        hand-written "1." marker: the template's "bullet1brojevi" numbers items as "[1]",
+        which reads as a citation rather than as a step, and these lists enumerate the
+        rules of a model."""
+        names = self._style_names()
+        if numbered:
+            style = "Normal Indent" if "Normal Indent" in names else None
+        else:
+            style = "bullet1" if "bullet1" in names else None
+
         for n, item in enumerate(items, start=1):
             parts = item if isinstance(item, (list, tuple)) else [item]
-            marker = f"{n}. " if numbered else "– "
-            self._place(M.para(self.d, marker, *self._cited(parts), style=style))
+            prefix = [f"{n}. "] if numbered else []
+            self._place(M.para(self.d, *prefix, *self._cited(parts), style=style))
 
     def _style_names(self):
         return {s.name for s in self.d.styles}
+
+    def code(self, lines, caption: str, label: str = None):
+        """A code or pseudocode listing in the template's "Kôd" style, numbered like a
+        figure and captioned below it as "Kôd <poglavlje>.<n> - ...".
+
+        Line breaks are soft (`add_break`) rather than one paragraph per line, so the
+        whole listing stays a single block that Word will not split mid-listing or
+        re-space as if each line were a paragraph."""
+        number = self._next_listing_number(label)
+        style = "Kôd" if "Kôd" in self._style_names() else None
+
+        block = self._place(self.d.add_paragraph(style=style))
+        run = block.add_run()
+        for i, line in enumerate(lines):
+            if i:
+                run.add_break()
+            run.add_text(line)
+
+        text = self._place(
+            self.d.add_paragraph(f"Kôd {number} – {bib.expand(caption)}", style="Caption"))
+        text.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        return number
 
     # -- numbered objects -------------------------------------------------
 
@@ -123,27 +200,39 @@ class Thesis:
         """"(3)" - for use inside a sentence: "prema izrazu " + t.ref("saa")."""
         return f"({self.refs[label]})"
 
-    def _next_figure_number(self, label: str = None) -> str:
-        """Allocate the next figure number in the current chapter, or return the one
-        already reserved for `label` by a forward reference."""
+    def _next_number(self, counters: dict, label: str = None) -> str:
+        """Allocate the next <chapter>.<n> in one counter series, or return the one
+        already reserved for `label` by a forward reference. Figures, tables and listings
+        each number independently, which is what the template's separate "Sl.", "Tablica"
+        and "Kôd" labels mean."""
         if label and label in self.refs:
             return self.refs[label]
-        self._figures[self.chapter] = self._figures.get(self.chapter, 0) + 1
-        number = f"{self.chapter}.{self._figures[self.chapter]}"
+        counters[self.chapter] = counters.get(self.chapter, 0) + 1
+        number = f"{self.chapter}.{counters[self.chapter]}"
         if label:
             self.refs[label] = number
         return number
 
+    def _next_figure_number(self, label: str = None) -> str:
+        return self._next_number(self._figures, label)
+
+    def _next_table_number(self, label: str = None) -> str:
+        return self._next_number(self._tables, label)
+
+    def _next_listing_number(self, label: str = None) -> str:
+        return self._next_number(self._listings, label)
+
     def figure(self, path: str, caption: str, label: str = None, width_cm: float = 14.0):
-        """A figure with a caption numbered <chapter>.<n>, per the template."""
+        """A figure with its caption below, numbered <chapter>.<n>, per the template."""
         number = self._next_figure_number(label)
 
-        holder = self._place(self.d.add_paragraph())
+        style = "slika" if "slika" in self._style_names() else None
+        holder = self._place(self.d.add_paragraph(style=style))
         holder.alignment = WD_ALIGN_PARAGRAPH.CENTER
         holder.add_run().add_picture(str(path), width=Cm(width_cm))
 
         text = self._place(
-            self.d.add_paragraph(f"Sl. {number}. {bib.expand(caption)}", style="Caption"))
+            self.d.add_paragraph(f"Sl. {number} {bib.expand(caption)}", style="Caption"))
         text.alignment = WD_ALIGN_PARAGRAPH.CENTER
         return number
 
@@ -151,6 +240,50 @@ class Thesis:
         """"Sl. 1.2" - usable before the figure itself is placed, which is the normal
         order: a figure is announced in the text and appears just after."""
         return f"Sl. {self._next_figure_number(label)}"
+
+    def table(self, headers, rows, caption: str, label: str = None,
+              widths_cm=None):
+        """A table with its caption *above* it, which is where the template puts it -
+        unlike a figure, whose caption goes below.
+
+        Cells are plain strings; citations in them are expanded like anywhere else. The
+        header row is bolded here rather than left to a table style, since the template
+        defines none for tables beyond the grid."""
+        number = self._next_table_number(label)
+
+        text = self._place(self.d.add_paragraph(
+            f"Tablica {number} {bib.expand(caption)}", style="Caption"))
+        text.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        table = self.d.add_table(rows=1, cols=len(headers))
+        if "Table Grid" in self._style_names():
+            table.style = "Table Grid"
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+        for cell, title in zip(table.rows[0].cells, headers):
+            run = cell.paragraphs[0].add_run(bib.expand(str(title)))
+            run.bold = True
+        for values in rows:
+            for cell, value in zip(table.add_row().cells, values):
+                cell.paragraphs[0].add_run(bib.expand(str(value)))
+
+        if widths_cm:
+            # Column widths in python-docx are per-cell, not per-column: setting the
+            # column alone is ignored by Word.
+            for row in table.rows:
+                for cell, width in zip(row.cells, widths_cm):
+                    cell.width = Cm(width)
+
+        self._place(table)
+        return number
+
+    def tabref(self, label: str) -> str:
+        """"Tablica 4.1" - like `figref`, usable before the table is placed."""
+        return f"Tablica {self._next_table_number(label)}"
+
+    def coderef(self, label: str) -> str:
+        """"Kôd 5.1" - like `figref`, usable before the listing is placed."""
+        return f"Kôd {self._next_listing_number(label)}"
 
 
 def _suppress_numbering(paragraph):
@@ -274,8 +407,13 @@ def write_bibliography(document, entries, after="Literatura", before=None):
             break
         body.remove(p._p)
 
+    # The template asks for the "literatura" style on bibliography entries. Its numbering
+    # reference is dangling in this document, so it contributes typography without
+    # stamping numbers on the entries - which is what author-year citations need, since a
+    # number here would refer to nothing in the text.
+    style = "literatura" if "literatura" in {s.name for s in document.styles} else None
     anchor = marker._p if marker is not None else None
     for entry in entries:
-        paragraph = document.add_paragraph(entry)
+        paragraph = document.add_paragraph(entry, style=style)
         if anchor is not None:
             anchor.addprevious(paragraph._p)

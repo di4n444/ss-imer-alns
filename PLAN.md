@@ -78,7 +78,8 @@ calibration enforces a wall-clock budget and would truncate.
 
 **Phase 2 (experiment) — calibration done, measurement not started.**
 
-**Phase 3 (thesis) — chapters 1 and 2 written.**
+**Phase 3 (thesis) — chapters 1–6 written.** Everything up to the results chapter is
+drafted; 7 waits on the measurement runs.
 
 ### Done
 
@@ -94,7 +95,8 @@ calibration enforces a wall-clock budget and would truncate.
 - **ALNS parameters calibrated and locked**: every default stands; `max_iter=300` is
   positively supported rather than merely retained
 - Thesis generator: native Word equations, author-year citations, style-based heading
-  numbering, alphabetical bibliography
+  numbering, alphabetical bibliography, template styles for lists, tables and code
+  listings, and two-pass section cross-referencing
 
 ### Next — Phase 2
 
@@ -117,23 +119,34 @@ Chapters, in the agreed structure:
 - [x] Uvod
 - [x] 1. Topologija i dinamika kompleksnih mreža
 - [x] 2. Analiza mreže Bitcoin Alpha
-- [ ] 3. Formulacija problema SS-IMER — 3.1 temeljni problemi, 3.2 definicija,
-      3.3 složenost, **3.4 procjena dosega (live-edge i SAA)**. 3.4 must define σ̂ fully,
-      because chapter 5's acceptance criterion uses it as a plain number; the frozen
-      scenario *design* stays in 6.2.
-- [ ] 4. Kriteriji odabira bridova — 4.1–4.6 the six criteria, 4.7 tie-breaking
-- [ ] 5. Metode rješavanja — 5.1 greedy, 5.2 ALNS (5.2.1 architecture and adaptive
-      weights, 5.2.2 destroy, 5.2.3 repair, 5.2.4 hop layers, 5.2.5 acceptance)
-- [ ] 6. Implementacija i eksperimentalni postav — 6.1 architecture, 6.2 frozen
-      scenarios, 6.3 source sample, **6.4 calibration**, 6.5 measures and protocol
+- [x] 3. Formulacija problema SS-IMER
+- [x] 4. Kriteriji odabira bridova
+- [x] 5. Metode rješavanja — 5.2 ended up with eight subsections rather than five: the
+      hop-layer mechanism needed three (the layers, why a wheel rather than a horizon,
+      and what the learned weights do *not* license), and the departures from R&P are
+      tabulated in 5.2.8 rather than scattered.
+- [x] 6. Implementacija i eksperimentalni postav
 - [ ] 7. Rezultati i rasprava — after the measurement runs
-- [ ] 8. Mogućnosti poboljšanja i budući rad
+- [ ] 8. Mogućnosti poboljšanja i budući rad. Already promised by the text: the σ-greedy
+      of REPORT §15.3 is named in 5.1 as the next step, so it has to appear here.
 - [ ] Zaključak, Sažetak, Summary
 
-Figures still to draw: ALNS loop (5.2.1), hop layers around the source (5.2.4), pipeline
-architecture (6.1). Existing: `fig1_1` ER/WS/BA, `fig1_2` live-edge, `fig2_1` degree
-distribution, `fig2_2` probability distribution, `fig2_3` bow-tie, `fig2_4` source
-population.
+All figures for chapters 1–6 exist: `fig1_1` ER/WS/BA, `fig1_2` live-edge, `fig2_1`
+degree distribution, `fig2_2` probability distribution, `fig2_3` bow-tie, `fig2_4` source
+population, `fig3_1` choke point, `fig5_1` ALNS loop, `fig5_2` hop layers, `fig6_1`
+pipeline.
+
+**Numbers and settings are read at build time, never retyped.** Chapters 2, 4, 5 and 6
+read `data/*.csv`; chapters 5 and 6 read `code/config.py` through `thesis/params.py`, so
+every parameter value in the prose is the one the code actually runs with. Chapter 6.4
+recomputes the calibration verdict from `data/calibration.csv` rather than quoting it.
+
+**Cross-references resolve themselves.** Headings carry `label=`, the text asks for
+`t.sec("label")`, and `build_thesis.py` renders twice — once to discover the numbers,
+once to substitute them — because a chapter may point forward (3.3 points at 5.2.4). The
+build refuses to save if any reference is still unresolved. Equations, figures, tables and
+listings work the same way via `t.ref`, `t.figref`, `t.tabref` and `t.coderef`. Do not
+write a section number by hand.
 
 **Where calibration is written up: §6.4, as method, not as a result.** It describes R&P's
 one-at-a-time procedure, the tuning set, the decision rule and the chosen values, and

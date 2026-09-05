@@ -62,7 +62,7 @@ def write(t, figures):
 
 
 def _dataset(t, figures, topo, edges):
-    t.h2("Skup podataka i preslikavanje ocjena u vjerojatnost")
+    t.h2("Skup podataka i preslikavanje ocjena u vjerojatnost", label="skup")
 
     t.p("Za praktičnu evaluaciju koristi se skup podataka Bitcoin Alpha iz Stanfordove "
         "zbirke mrežnih podataka (SNAP), predstavljen u radovima {kumar2016,kumar2018}. "
@@ -106,7 +106,7 @@ def _dataset(t, figures, topo, edges):
         "kontinuum. Najniža od njih, ", _n(p.min(), 3), ", pokriva čak ",
         _n(100 * (p == p.min()).mean(), 1), " % svih bridova. Ta diskretnost nije "
         "tehnički detalj: kriteriji koji bridove rangiraju po vjerojatnosti time dobivaju "
-        "vrlo velike skupine jednako ocijenjenih bridova, što se razmatra u odjeljku 4.7.")
+        "vrlo velike skupine jednako ocijenjenih bridova, što se razmatra u odjeljku ", t.sec("izjednacenost"), ".")
 
     t.figure(figures / "fig2_2_probability_distribution.png",
              "Raspodjela vjerojatnosti prijenosa po bridovima. Vjerojatnost poprima točno "
@@ -172,7 +172,7 @@ def _small_world(t, figures, topo):
 
 
 def _components(t, figures, topo):
-    t.h2("Struktura komponenti i dekompozicija jezgre")
+    t.h2("Struktura komponenti i dekompozicija jezgre", label="komponente")
 
     t.p("Budući da je graf usmjeren, njegova se makroskopska struktura opisuje "
         "razlaganjem na komponente po uzoru na klasičnu strukturu leptir-kravate "
@@ -206,7 +206,7 @@ def _components(t, figures, topo):
 
 
 def _communities(t, data, topo, edges):
-    t.h2("Čvorišta i zajednice")
+    t.h2("Čvorišta i zajednice", label="zajednice")
 
     top = pd.read_csv(data / "top_betweenness_sources.csv")
     names = ", ".join(str(int(r.snap_id)) for _, r in top.head(3).iterrows())
@@ -236,13 +236,13 @@ def _communities(t, data, topo, edges):
         ", odnosno ", _n(100 * bridges / len(edges), 1), " % svih bridova. Granovetter "
         "argumentira da upravo takve veze prenose informaciju između inače odvojenih "
         "skupina, zbog čega su prirodan kandidat za uklanjanje; kriterij se definira u "
-        "odjeljku 4.4.")
+        "odjeljku ", t.sec("most"), ".")
 
 
 def _threshold(t, topo):
     t.h2("Spektralni prag i režim širenja")
 
-    t.p("Prag opisan u odjeljku 1.3 sada se može izračunati za ovu mrežu. Najveća "
+    t.p("Prag opisan u odjeljku ", t.sec("prag"), " sada se može izračunati za ovu mrežu. Najveća "
         "vlastita vrijednost matrice susjedstva iznosi ", sub(v("λ"), up("max")), " = ",
         _n(topo.lambda_max_A, 2), ", pa je pripadni epidemiološki prag ",
         sub(v("λ"), up("c")), " = ", _n(topo.lambda_c, 4), ". Prosječna vjerojatnost "
@@ -263,7 +263,7 @@ def _threshold(t, topo):
 
 
 def _sources(t, figures, profile):
-    t.h2("Populacija izvora")
+    t.h2("Populacija izvora", label="populacija")
 
     t.p("Posljednje svojstvo koje treba utvrditi tiče se same populacije mogućih izvora, "
         "jer ono ograničava koje se instance problema uopće mogu postaviti.")
@@ -295,7 +295,7 @@ def _sources(t, figures, profile):
         "izvori zanimljivi za drugu razinu istraživačkog pitanja, jer kod njih malen broj "
         "veza vodi prema velikoj komponenti, pa se učinkovit rez ne mora nalaziti uz sam "
         "izvor. Obje veličine zato ulaze u raspored uzorkovanja izvora opisan u "
-        "odjeljku 6.3.")
+        "odjeljku ", t.sec("uzorak"), ".")
 
     t.figure(figures / "fig2_4_source_population.png",
              "Populacija mogućih izvora: kumulativna raspodjela očekivanog dosega "

@@ -27,10 +27,18 @@ OUTPUT = ROOT / "Optimizacija protoka informacije u grafovima - nacrt.docx"
 CHAPTERS = [
     "ch01_topologija",
     "ch02_bitcoin_alpha",
+    "ch03_formulacija",
+    "ch04_kriteriji",
+    "ch05_metode",
+    "ch06_implementacija",
 ]
 
 
-def main():
+def _render(sections=None):
+    """Write every chapter into a fresh copy of the source document.
+
+    Returns the assembled document and its `Thesis`, whose `sections` maps each labelled
+    heading to the number it ended up with."""
     document = docx.Document(SOURCE)
     doc.base_style(document)
     numbering = doc.capture_heading_numbering(document)
@@ -41,12 +49,29 @@ def main():
         unnumbered=("Sažetak", "Summary", "Sadržaj", "Uvod", "Zaključak", "Literatura",
                     "Izjava o korištenju umjetne inteligencije"))
 
-    thesis = doc.Thesis(document, marker_heading="Literatura", numbering=numbering)
+    thesis = doc.Thesis(document, marker_heading="Literatura", numbering=numbering,
+                        sections=sections)
     for name in CHAPTERS:
         module = __import__(name)
         module.write(thesis, FIGURES)
 
     doc.write_bibliography(document, bib.sorted_entries())
+    return document, thesis
+
+
+def main():
+    # Two passes. Word numbers headings itself, so a section's number exists only as a
+    # position in the finished document; the first pass is what discovers it. A chapter
+    # may point forward - chapter 3 refers to 5.2.4 - which no single pass can resolve.
+    _, first = _render()
+    document, thesis = _render(sections=first.sections)
+
+    unresolved = [p.text for p in document.paragraphs if "?.?" in p.text]
+    if unresolved:
+        raise ValueError(
+            f"{len(unresolved)} unresolved section reference(s); the first is:\n"
+            f"  {unresolved[0][:200]}\n"
+            "Add label= to the heading being referred to.")
 
     document.save(OUTPUT)
 
@@ -54,7 +79,7 @@ def main():
     figures = sum(thesis._figures.values())
     print(f"wrote {OUTPUT.name}")
     print(f"  {thesis.chapter} chapters, {equations} numbered expressions, "
-          f"{figures} figures")
+          f"{figures} figures, {len(thesis.sections)} labelled sections")
     return thesis
 
 

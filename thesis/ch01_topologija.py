@@ -223,7 +223,7 @@ def _scale_free(t):
 
 
 def _icm(t, figures):
-    t.h2("Nezavisni kaskadni model (ICM)")
+    t.h2("Nezavisni kaskadni model (ICM)", label="icm")
 
     t.p("Za modeliranje širenja u radu se koristi nezavisni kaskadni model, koji su "
         "formalizirali {~kempe2003}. U tom se modelu svaki čvor u svakom "
@@ -267,7 +267,7 @@ def _icm(t, figures):
     t.p("Time se, za zadani ishod bacanja, stohastički proces svodi na determinističko "
         "pitanje dohvatljivosti u grafu, koje se rješava pretraživanjem u širinu. Ta je "
         "ekvivalencija temelj cijeloga postupka procjene korištenog u ovom radu i "
-        "detaljno se razrađuje u odjeljku 3.4. Podgraf propusnih bridova naziva se ",
+        "detaljno se razrađuje u odjeljku ", t.sec("procjena"), ". Podgraf propusnih bridova naziva se ",
         i("live-edge"), " realizacijom, a ", t.figref("liveedge_fig"), " prikazuje jedan takav "
         "primjer.")
 
@@ -280,7 +280,7 @@ def _icm(t, figures):
 
 
 def _threshold(t):
-    t.h2("Epidemiološki prag")
+    t.h2("Epidemiološki prag", label="prag")
 
     t.p("Ključno pitanje pri analizi širenja na mreži jest hoće li proces pokrenut iz "
         "izvora brzo odumrijeti ili će zahvatiti makroskopski udio mreže. Granica koja "
@@ -311,4 +311,4 @@ def _threshold(t):
     t.p("{~tong2012} na temelju te veze predlažu ciljanu izmjenu bridova radi smanjenja ", sub(v("λ"), up("max")), ". U ovom radu, međutim, cilj "
         "optimizacije nije ", sub(v("λ"), up("max")), ", nego očekivani doseg iz jednog "
         "izvora. Spektralna se veličina koristi isključivo kao jedan od kriterija za "
-        "rangiranje bridova, što se obrazlaže u odjeljku 4.6.")
+        "rangiranje bridova, što se obrazlaže u odjeljku ", t.sec("spektralni"), ".")
