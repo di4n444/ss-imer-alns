@@ -397,6 +397,26 @@ Note for whoever runs this next: selecting probe cells by worst *absolute* score
 saturated hubs, where no budget in range can contain the source and the ceiling is low for
 reasons unrelated to search. Select by the *loss against a baseline* instead.
 
+### Which cells need a longer search — detect, do not predict
+
+`k` does not predict it and neither, reliably, does `k/out(s)`: whether 300 iterations is
+enough depends on where the good cut lies, which is the thing being searched for. Two
+signals avoid guessing.
+
+**The baselines are a free prior.** They run before ALNS in the same cell and cost about 1%
+of it. If all six achieve nearly nothing the instance either needs real search or is
+hopeless, and `k/out(s)` separates those two readings.
+
+**Better, `run_alns` now reports when it last improved.** `last_improvement` is the
+iteration that produced the final global best and `improvement_share` is that as a fraction
+of the run. Near 0 means the search converged early and more iterations buy nothing; near 1
+means it was still improving when the budget cut it off, which is starvation observed
+rather than predicted. Measured on an easy cell: shares of 0.12 and 0.04, matching the
+re-run finding that such cells gain nothing from more iterations.
+
+This is the cheap way to allocate a second pass — run everything at a modest budget, then
+re-run only the cells whose share is high — and it costs one extra column.
+
 ## 8. Deliberately not done — material for chapter 8
 
 - **Scaling the iteration budget** with k and out-degree instead of the fixed 300, which
