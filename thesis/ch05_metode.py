@@ -326,7 +326,8 @@ def _slojevi(t, figures):
         "manje od četiri koraka (odjeljak ", t.sec("malisvijet"),
         "), pa treći sloj već obuhvaća veliku većinu bridova dohvatljivih iz izvora, dok "
         "svaki dublji sloj skup kandidata dodatno umnaža, a gotovo ne donosi bridove koji "
-        "bi mogli zatvoriti put iz izvora.")
+        "bi mogli zatvoriti put iz izvora. Raspored slojeva oko izvora shematski prikazuje ",
+        t.figref("slojevi"), ".")
 
     t.figure(figures / "fig5_2_hop_layers.png",
              "Shematski prikaz slojeva kandidata oko izvora. Svaka točka je jedan kandidatni "

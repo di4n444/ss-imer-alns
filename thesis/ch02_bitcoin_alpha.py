@@ -106,7 +106,8 @@ def _dataset(t, figures, topo, edges):
         "kontinuum. Najniža od njih, ", _n(p.min(), 3), ", pokriva čak ",
         _n(100 * (p == p.min()).mean(), 1), " % svih bridova. Ta diskretnost nije "
         "tehnički detalj: kriteriji koji bridove rangiraju po vjerojatnosti time dobivaju "
-        "vrlo velike skupine jednako ocijenjenih bridova, što se razmatra u odjeljku ", t.sec("izjednacenost"), ".")
+        "vrlo velike skupine jednako ocijenjenih bridova, što se razmatra u odjeljku ",
+        t.sec("izjednacenost"), ". Raspodjelu prikazuje ", t.figref("prob"), ".")
 
     t.figure(figures / "fig2_2_probability_distribution.png",
              "Raspodjela vjerojatnosti prijenosa po bridovima. Vjerojatnost poprima točno "

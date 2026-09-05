@@ -16,11 +16,15 @@ SOURCES = [
     ("granovetter1973", "Granovetter", 1973),
     ("valiant1979", "Valiant", 1979),
     ("watts1998", "Watts i Strogatz", 1998),
+    ("mak1999", "Mak i sur.", 1999),
     ("albert2000", "Albert i sur.", 2000),
     ("albert2002", "Albert i Barabási", 2002),
+    ("kleywegt2002", "Kleywegt i sur.", 2002),
     ("kempe2003", "Kempe i sur.", 2003),
     ("wang2003", "Wang i sur.", 2003),
+    ("hoos2004", "Hoos i Stützle", 2004),
     ("ropke2006", "Røpke i Pisinger", 2006),
+    ("leskovec2007", "Leskovec i sur.", 2007),
     ("kimura2008", "Kimura i sur.", 2008),
     ("clauset2009", "Clauset i sur.", 2009),
     ("antulov2008", "Antulov-Fantulin", 2008),
@@ -92,6 +96,14 @@ ENTRIES = {
         "Valiant, L. G. The complexity of enumeration and reliability problems. SIAM Journal on Computing, vol. 8, br. 3, 1979.",
     "watts1998":
         "Watts, D. J., Strogatz, S. H. Collective dynamics of 'small-world' networks. Nature, vol. 393, 1998.",
+    "mak1999":
+        "Mak, W.-K., Morton, D. P., Wood, R. K. Monte Carlo bounding techniques for determining solution quality in stochastic programs. Operations Research Letters, vol. 24, br. 1, 1999., str. 47-56.",
+    "kleywegt2002":
+        "Kleywegt, A. J., Shapiro, A., Homem-de-Mello, T. The Sample Average Approximation Method for Stochastic Discrete Optimization. SIAM Journal on Optimization, vol. 12, br. 2, 2002., str. 479-502.",
+    "hoos2004":
+        "Hoos, H. H., Stützle, T. Stochastic Local Search: Foundations and Applications. San Francisco: Morgan Kaufmann, 2004.",
+    "leskovec2007":
+        "Leskovec, J., Krause, A., Guestrin, C., Faloutsos, C., VanBriesen, J., Glance, N. Cost-effective Outbreak Detection in Networks. U: Proceedings of the 13th ACM SIGKDD international conference on Knowledge discovery and data mining, 2007.",
     "albert2000":
         "Albert, R., Jeong, H., Barabási, A.-L. Error and attack tolerance of complex networks. Nature, vol. 406, 2000.",
     "albert2002":

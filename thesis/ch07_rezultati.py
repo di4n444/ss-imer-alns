@@ -124,7 +124,8 @@ def _validity(t, figures, results):
         " podcijenjeno, pa je odstupanje sustavno, ali maleno. Velikih odstupanja gotovo "
         "i nema: apsolutni raskorak veći od ", _n(0.10, 2), " pojavljuje se u ",
         _count(gap["over_10"], "instanci", "instance", "instanci"),
-        ", a najveći zabilježeni iznosi ", _signed(gap["max"]), ".")
+        ", a najveći zabilježeni iznosi ", _signed(gap["max"]),
+        ". Obje procjene, po instanci, prikazuje ", t.figref("saamc"), ".")
 
     t.figure(figures / "fig7_1_saa_mc.png",
              "Relativno smanjenje dosega na zamrznutom i na neovisnom skupu realizacija, "
@@ -237,6 +238,20 @@ def _comparison(t, results):
     reach = stratified(results, "sigma0", [0, 10, 100, 400, 1e9],
                        ["< 10", "10 – 100", "100 – 400", "≥ 400 (zasićeni)"])
     by_reach = reach.set_index("stratum")
+
+    saturated = by_reach.loc["≥ 400 (zasićeni)"]
+    t.p("Prosjek koji prikazuje ", t.tabref("usporedba_tab"),
+        " spaja, međutim, dvije različite pojave, što se vidi tek kad se instance "
+        "razdvoje po početnom dosegu izvora, kako prikazuje ", t.tabref("razredi"),
+        ". Na izvorima srednjega dosega prednost metaheuristike iznosi ",
+        _signed(by_reach.loc["10 – 100"].mean_delta), " odnosno ",
+        _signed(by_reach.loc["100 – 400"].mean_delta),
+        ", dok na ", _count(saturated.cells, "zasićenoj instanci", "zasićene instance",
+                            "zasićenih instanci"),
+        " prelazi u zaostatak od ", _signed(saturated.mean_delta),
+        ". Kako zasićeni izvori čine većinu uzorka, upravo taj zaostatak gotovo poništava "
+        "ukupnu prednost naspram vjerojatnosti prolaska.")
+
     t.table(
         ["Razred dosega", "Instanci", "ALNS", "Vjerojatnost", "Razlika", "Bolje", "Lošije"],
         [[str(row.stratum), _int(row.cells), _n(row.alns_mean_R), _n(row.other_mean_R),
@@ -245,18 +260,6 @@ def _comparison(t, results):
         "Metaheuristika naspram vjerojatnosti prolaska, razdvojeno po početnom dosegu "
         "izvora. Prosjek preko svih instanci skriva da se prednost gubi upravo na "
         "zasićenim izvorima.", label="razredi")
-
-    saturated = by_reach.loc["≥ 400 (zasićeni)"]
-    t.p("Razdvajanje po početnom dosegu pokazuje da prosjek koji prikazuje ",
-        t.tabref("usporedba_tab"),
-        " spaja dvije različite pojave. Na izvorima srednjega dosega prednost "
-        "metaheuristike iznosi ", _signed(by_reach.loc["10 – 100"].mean_delta),
-        " odnosno ", _signed(by_reach.loc["100 – 400"].mean_delta),
-        ", dok na ", _count(saturated.cells, "zasićenoj instanci", "zasićene instance",
-                            "zasićenih instanci"),
-        " prelazi u zaostatak od ", _signed(saturated.mean_delta),
-        ". Kako zasićeni izvori čine većinu uzorka, upravo taj zaostatak gotovo poništava "
-        "ukupnu prednost naspram vjerojatnosti prolaska.")
 
     share = stratified(results, "budget_share", [0, .2, .4, .7, 1.01],
                        ["≤ 20 %", "20 – 40 %", "40 – 70 %", "> 70 %"]).set_index("stratum")
@@ -322,7 +325,8 @@ def _budget(t, figures, results):
         "mjerena kroz cijeli raspon: dva srednje veličine i jedno čvorište, kod kojega "
         "proračun doseže stvarni udio izlaznoga stupnja. Tri se krivulje namjerno ne "
         "objedinjuju u jednu: izlazni se stupnjevi razlikuju, pa isti ", v("k"),
-        " kod svakoga izvora znači drukčiji udio, što gornja os na slici i pokazuje.")
+        " kod svakoga izvora znači drukčiji udio, što pokazuje gornja os na ",
+        t.figref("sweep"), ".")
 
     t.figure(figures / "fig7_2_k_sweep.png",
              "Relativno smanjenje dosega u ovisnosti o proračunu, po izvoru. Gornja os "
@@ -424,7 +428,8 @@ def _search_length(t, figures, data, results, scaled):
         ". Prosječna promjena iznosi ", _signed(summary["mean_delta"]),
         ", uz najveći pojedinačni dobitak od ", _signed(summary["best_delta"]),
         ". Sam prosjek, međutim, krivo opisuje što se dogodilo, jer je dobitak izrazito "
-        "neravnomjerno raspoređen.")
+        "neravnomjerno raspoređen: sažetak po skupinama daje ", t.tabref("produljenje"),
+        ", a promjenu svake pojedine instance ", t.figref("gain"), ".")
 
     bands = summary["bands"]
     t.table(

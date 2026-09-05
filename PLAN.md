@@ -163,11 +163,17 @@ Chapters, in the agreed structure:
         the same cells, the gradient by prior performance, and the four cells that got
         *worse*, which is 7.1's overfitting seen as a cost of search effort. State the
         selection bias before the result. Hands off to chapter 8.
-- [ ] 8. Mogućnosti poboljšanja i budući rad. Already promised by the text: the σ-greedy
-      of REPORT §II.5 is named in 5.1 as the next step, so it has to appear here. The
-      iteration item is **allocation by need**, not a larger budget — chapter 7 has
-      already measured the larger budget and shown it buys little on average.
-- [ ] Zaključak, Sažetak, Summary
+- [x] 8. Mogućnosti poboljšanja i budući rad — three subsections, each tied to a source
+      rather than asserted: 8.1 allocation by need (stagnation criteria, `hoos2004`),
+      8.2 the σ-greedy (`kimura2008`, and `leskovec2007` for why lazy greedy does *not*
+      port without submodularity), 8.3 the estimate and the seeds (`kleywegt2002`,
+      `mak1999`). Four references added to `bibliography.py`, all verified against the
+      published record.
+- [ ] Zaključak, Sažetak, Summary. The Zaključak is a chapter (`ch09_*.py`); **Sažetak and
+      Summary are front matter and are filled in the original .docx**, not generated.
+- [ ] The AI-usage statement, also in the original — the template requires the technologies,
+      their versions, the purpose, and a note on the extent of your own intervention.
+- [ ] **The trim, last.** Body is ~36 pages against a target of roughly 30.
 
 All 16 figures exist: `fig1_1` ER/WS/BA, `fig1_2` live-edge, `fig2_1` degree distribution,
 `fig2_2` probability distribution, `fig2_3` bow-tie, `fig2_4` source reach, `fig2_5`
@@ -197,9 +203,26 @@ build refuses to save if any reference is still unresolved. Equations, figures, 
 listings work the same way via `t.ref`, `t.figref`, `t.tabref` and `t.coderef`. Do not
 write a section number by hand.
 
-**Length.** Chapters 1–6 currently run about 34 pages of text. The target is roughly 30
-before chapters 7 and 8 add another ten, so the remaining trim comes out of prose rather
-than out of substance.
+**The faculty template is the authority on format.**
+`Završni_rad_predložak_lipanj_2026.docx` settles questions of citation style, captions,
+heading depth and the rest — check it rather than guessing. What it has already settled:
+
+- Two citation styles are permitted and **one must be used consistently**; this thesis uses
+  author–year, so every new source goes into `bibliography.py` and is cited by key.
+- **Every figure and table must be referenced in the text, and the reference comes before
+  the block appears** — it is the announcement, not an afterthought. Three chapters
+  violated this and were fixed; if you add a figure, add its `t.figref` too.
+- Captions: figures below (`Sl. 7.1`), tables above (`Tablica 7.1`), equations numbered at
+  the right margin and referenced as "izraz (25)". `doc.py` already does all three.
+- **Heading depth stops at three levels** (7.4.1); do not nest deeper.
+- A `Skraćenice` chapter is optional and this thesis does not have one. Worth considering,
+  given ALNS, SAA, MC, IC, SS-IMER and ICM all appear.
+
+**Length.** The body now runs about 36 pages against a target of roughly 30. Chapters 1–6
+were about 34 before 7 and 8 were written, so the two result chapters cost less than the
+ten pages budgeted for them — but the trim is still owed, and it comes out of prose rather
+than out of substance. It is deliberately the **last** step, after the Zaključak and the
+abstracts, so that nothing is cut twice.
 
 ---
 
