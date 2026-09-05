@@ -1,12 +1,62 @@
 # REPORT — thesis-facing working document
 
-This file is the single source of truth for everything that needs to end up in the thesis
-text: decisions made and why, numbers (pointer to the CSV that holds them, never retyped
-here), and things that must not be forgotten when writing. It is not the thesis — it is the
-raw material for it. Written in English for precision; translate into Croatian when drafting
-the actual chapters.
+The single source of truth for what goes into the thesis: decisions and why, and pointers
+to the CSV that holds each number. It is raw material for the text, not the text.
 
-Update this file continuously as we work, not at the end.
+**Provenance rule.** Numbers live in `data/*.csv`, produced by the code in this repository,
+and are never retyped here or into the thesis by hand. Chapter 2 of the thesis reads its
+figures from those CSVs at build time for exactly that reason. Nothing from
+[PILOT_TESTS.md](PILOT_TESTS.md) is a measurement of this system — see the warning at the
+top of that file.
+
+Written in English for precision; translated when drafting the Croatian chapters.
+
+**On the numbering.** Sections are in the order they were written, which is why the
+sequence runs 1–5, 6a–9a, then 6–18. The code no longer cites section numbers, so
+renumbering would now be safe — but every internal cross-reference would have to be
+remapped at the same time, and a pointer that silently resolves to the wrong section is
+worse than an ugly sequence. The index below is grouped logically instead.
+
+---
+
+## Index
+
+**Problem and scope**
+- [§1 What SS-IMER is and isn't](#1-problem-scope--what-ss-imer-is-and-isnt)
+- [§8c Level-2 hypothesis, corrected framing](#8c-level-2-hypothesis--corrected-framing-supersedes-the-original-phrasing)
+- [§15 What the baseline set should be](#15-what-the-baseline-set-should-be--read-from-kimura-castiglioni-and-tong)
+
+**The data**
+- [§9a Duplicate edges in the raw data](#9a-duplicate-edges-in-the-raw-data)
+- [§5 Numbers — which CSV holds what](#5-numbers)
+- [§18 The source population](#18-the-source-population--measured-and-it-changed-the-sampling-design)
+
+**Method decisions**
+- [§2 Heuristic portfolio](#2-heuristic-portfolio--whats-in-it-and-why)
+- [§3 Tie-breaking policy](#3-tie-breaking-policy--must-be-documented-in-the-thesis-not-fixed)
+- [§6a ALNS core mechanism, verbatim from R&P](#6a-alns-core-mechanism--verbatim-from-røpke--pisinger-2006)
+- [§7a Where our portfolio doesn't map onto R&P](#7a-where-our-heuristic-portfolio-doesnt-map-cleanly-onto-rp--decided)
+- [§14 R&P fidelity audit, term by term](#14-rp-fidelity-audit--read-from-the-paper-term-by-term)
+- [§12 The hop-horizon mechanism was broken](#12-the-hop-horizon-mechanism-was-broken-and-how-we-found-out--thesis-relevant)
+- [§13 k ≥ out(s) is the trivial case](#13-k--outs-is-the-trivial-case-not-an-error)
+- [§16 Two settled scope decisions](#16-two-settled-scope-decisions)
+
+**Implementation**
+- [§8a Graph library and the alignment guard](#8a-graph-library--igraph-with-a-structural-not-one-off-alignment-guard)
+- [§8b Heuristics use full-graph metrics only](#8b-heuristics-use-full-graph-metrics-never-saamc-scenario-derived-metrics--why)
+- [§8 Precomputation](#8-precomputation--saa-fitness-is-the-only-expense-thats-allowed-to-be-expensive)
+- [§7 Scenario architecture](#7-scenario-architecture-and-candidate-space--corrections-supersedes-earlier-draft-of-6)
+- [§11 Runtime cost model](#11-runtime--cost-model-what-was-fixed-and-what-it-cost-us-to-learn)
+- [§4 Known bugs not to reintroduce](#4-known-bugs-from-the-pilot-phase--do-not-reintroduce)
+- [§17 Phase 1 smoke tests](#17-phase-1-smoke-tests--the-two-that-could-have-invalidated-a-calibration)
+
+**Experiment**
+- [§9 Experiment design](#9-experiment-design--curated-showcases-not-one-uniform-matrix)
+- [§10 Calibration is itself thesis content](#10-alns-parameter-calibration--is-itself-thesis-content)
+
+**Superseded, kept for the record**
+- [§6 Open items](#6-open-items-to-confirm-beforewhile-coding) — both resolved; the hop
+  horizon it discusses was removed in §12
 
 ---
 

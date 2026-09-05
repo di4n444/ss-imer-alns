@@ -60,13 +60,26 @@ code/
   operators.py          ALNS destroy + repair, two independently weighted families
   alns_optimizer.py     the ALNS loop: three adaptive weight books (destroy, repair,
                         hop scope), SA acceptance
-  greedy_baseline.py    hop0-only baselines, one per heuristic          (not yet written)
-  run_experiment.py     orchestration -> CSV                            (not yet written)
+  greedy_baseline.py    hop0-only baselines, one per heuristic
+  source_profile.py     per-source reach/out-degree profile for the whole graph
+  sample_sources.py     the one stratified source sample (calibration | measurement)
+  run_experiment.py     orchestration -> one CSV row per (source, k, method)
+  calibrate.py          R&P one-at-a-time parameter tuning -> CSV
   smoke_test.py         end-to-end pipeline check with timings
   test_evaluator.py     regression tests for the objective function
   make_topology_figures.py  Chapter 1-2 figures, generated from the CSVs
-data/                   raw dataset + generated topology/feature CSVs
-figures/                generated only from CSVs
+  test_evaluator.py     objective pinned against an igraph oracle
+  test_features.py      spectral index alignment, three independent ways
+  test_scenarios.py     scenario reproducibility, independence, immutability
+thesis/
+  omml.py               native Word equations (OMML) with proper math formatting
+  doc.py                document assembly against the faculty template's rules
+  bibliography.py       citation keys -> author-year, and the bibliography itself
+  figures.py            conceptual diagrams for the theory and method chapters
+  ch01_*.py, ch02_*.py  chapter text, numbers read from data/ at build time
+  build_thesis.py       writes the chapters into the .docx
+data/                   raw dataset + generated topology/feature/sample/result CSVs
+figures/                generated only from CSVs or from figures.py
 ```
 
 `PILOT_TESTS.md` documents lessons (including bugs to avoid) from an earlier, discarded

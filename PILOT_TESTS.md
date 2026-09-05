@@ -1,7 +1,68 @@
-# PILOT TESTS - ključni nalazi za restart projekta
+# PILOT TESTS — nalazi iz odbačene pilot implementacije
 
-## Zašto ovaj dokument
-Sažetak najvrjednijih nalaza iz pilot faze kako bi novi početak (na Bitcoin Alpha) krenuo s dobrim odlukama i bez ponavljanja slijepih ulica.
+> ## ⚠ NIJEDAN BROJ IZ OVE DATOTEKE NE SMIJE UĆI U RAD
+>
+> **Ovaj dokument opisuje implementaciju koja je obrisana i koja nikada nije bila u
+> gitu.** Njezine su brojke nastale kodom koji je kasnije imao dokazane greške —
+> nepodudarnost indeksa spektralnog vektora, nagrađivanje poteza bez promjene, i
+> usporedbu koja je ALNS stavljala u skup s kojim se uspoređuje. Dio brojki nikada nije
+> ni provjeren.
+>
+> **Svaki broj u radu dolazi iz `data/*.csv` koje generira kod u ovom repozitoriju.**
+> Ako se neka veličina spominje i ovdje i u `data/`, vrijedi isključivo ona iz `data/`.
+> Primjeri razlika koje su već potvrđene: eksponent raspodjele stupnjeva (ovdje
+> γ_out = 2,81, izmjereno 2,148), Louvain (ovdje 28 zajednica / Q = 0,493, izmjereno 26 /
+> Q = 0,491).
+>
+> **Čemu onda ova datoteka služi:** čuva *odluke* i *pogreške koje se ne smiju ponoviti*.
+> To su tvrdnje o tome kako kod treba biti napisan, a ne mjerenja. Popis onih koje i dalje
+> obvezuju je odmah ispod; sve iza toga je povijesni zapis.
+
+---
+
+## Što od ovoga i dalje obvezuje
+
+Sažetak odluka koje su ugrađene u sadašnji kod. Svaka je preživjela reviziju i vrijedi bez
+obzira na brojke koje su ih izvorno motivirale.
+
+**Arhitektura i mjerenje**
+
+- Izvori se biraju po **dosegu**, ne po centralnosti — topološki različiti čvorovi znali su
+  imati identičan doseg (§1). *Provedeno: `source_profile.py`, `sample_sources.py`.*
+- Jedan uzorak izvora, jedan seed, kalibracija disjunktna od mjerenja (§35 B7).
+  *Provedeno: `data/sample.csv`.*
+- Zamrznuti scenariji: in-sample i out-of-sample odvojeni i nepromjenjivi; evaluacija radi
+  na maski, nikad na samom scenariju (§6, §24). *Provedeno: `test_scenarios.py`.*
+- Jedan redak po metodi u rezultatima; nikad stupac koji metodu stavlja u skup s kojim je
+  uspoređujemo (§28). *Provedeno: `run_experiment.py`.*
+- Svi razriješeni parametri idu u isti redak rezultata; varijanta je override, ne poseban
+  kodni put (§37). *Provedeno: `run_alns(..., **params)`.*
+- Izvještava se i SAA i MC doseg — poznato je da se znaju razilaziti (§34).
+
+**Pogreške koje se ne smiju vratiti**
+
+- Spektralni vektor bodovan po poretku imena umjesto po indeksu grafa (§18, §26).
+  *Zaštićeno: `test_features.py`.*
+- Δ = 0 nagrađen kao poboljšanje (§18). *Zaštićeno konstrukcijom u `alns_optimizer.py`.*
+- Ista heuristika dijeljena između destroy i repair obitelji (§32).
+- Neseedani Louvain ili globalni `random` (§35 R13).
+- Tihi preskok kad je repair kratak; `|D| ≠ k` je assert, ne `continue` (§35 B2).
+- Miješanje internih igraph indeksa s izvornim SNAP identifikatorima (§35).
+
+**Odluke o modelu**
+
+- `k ≥ out(s)` je trivijalan slučaj (izolacija), ne greška (§10; §19 je bio pogrešan).
+- Baselinei biraju samo iz hop0 — širenje bez pretrage šteti (§33).
+- Warm start je k slučajnih hop0 bridova, ne heuristikom odabranih (§19).
+- Granovetterov lokalni most, ne Louvainova zajednica, kao strukturni kriterij (§29).
+- MinCut nije ravnopravna metoda za usporedbu (§36).
+
+---
+
+## Povijesni zapis
+
+Sve što slijedi zapis je pilot faze. **Brojke u nastavku nisu mjerenja sadašnjeg
+sustava.** Zadržano jer objašnjava *zašto* su gornje odluke donesene.
 
 ## 1) Najvažniji konceptualni nalaz
 - **Topološka raznolikost seedova nije isto što i raznolikost kaskadnog dosega.**
