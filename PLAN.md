@@ -110,7 +110,7 @@ drafted; 7 waits on the measurement runs.
       σ/R spread across a few seeds. Report the spread, do not average it away.
 - [ ] Do the greedy baselines also reach the enumerated optimum on small sources
       (out ≤ 10)? Separates a weak *criterion* from a weak *search*.
-- [ ] Out-of-sample validation of the best cuts found.
+- [ ] Out-of-sample validation of the best cuts found and record the difference between SAA and MC spread.
 
 ### Next — Phase 3 (thesis)
 
