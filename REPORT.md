@@ -433,7 +433,11 @@ every method scores identically and the average is flattered equally), and the `
 plus everything in `results_scaled.csv` from questions 1 and 2 (ALNS at a different
 iteration budget with no matching baselines).
 
-## 7b. Iteration budget — a lead, not a result
+## 7b. Iteration budget — a lead that was followed up
+
+Read this section in order: the two probes below opened the question, the scaled re-run at
+the end answered it, and what survives into chapter 8 is neither of those but the
+allocation mechanism they jointly argue for (§8).
 
 `max_iter` is fixed at 300 regardless of k or out-degree, which is very little search when
 hop0 alone holds hundreds of candidates. Two cells where a baseline had beaten ALNS — so a
@@ -456,8 +460,9 @@ at the parameters actually used, and say plainly that those parameters under-ser
 large-budget cells rather than claiming ALNS is unsuited to them.
 
 Still **one probe on two cells, not an experiment** — single RNG seed, cells chosen because
-ALNS had lost on them. The fix, scaling the iteration budget with k and out-degree, belongs
-in chapter 8.
+ALNS had lost on them. Scaling the budget with k was subsequently run across 50 cells; that
+is the re-run at the end of this section, and it is a chapter 7 result, not a chapter 8
+proposal.
 
 Note for whoever runs this next: selecting probe cells by worst *absolute* score picks the
 saturated hubs, where no budget in range can contain the source and the ceiling is low for
@@ -508,6 +513,10 @@ stagnation cut-off — it lengthens a run that is still paying rather than trunc
 that is not — and it does not disturb the cooling schedule, which would simply be derived
 from the extended budget.
 
+**This subsection is the chapter 8 material**, not the scaled re-run below it. The re-run
+is a finished measurement and belongs in chapter 7; what remains open is spending the
+iterations only where the diagnostic says they will be repaid.
+
 ### What the scaled re-run showed
 
 50 cells at `max_iter = min(100k, 2000)`, everything else unchanged, written to
@@ -544,8 +553,23 @@ gains.
 
 ## 8. Deliberately not done — material for chapter 8
 
-- **Scaling the iteration budget** with k and out-degree instead of the fixed 300, which
-  §7b shows is the single most promising change and is currently supported by one probe.
+- **Allocating search effort by need**, which is what is left of the iteration question
+  now that raising the budget globally has been measured. §7b did that: `max_iter` scaled
+  to `min(100k, 2000)` on 50 cells cost a factor of 3.7 in compute for a mean +0.016, and
+  the gain was concentrated entirely in the cells that were doing worst. So the global
+  constant is the wrong instrument, and three sharper ones follow, in increasing strength:
+  a **two-pass** scheme that re-runs only the cells whose improvement share is high *and*
+  whose R is low (one extra column, no change to the search); a **dynamic** budget where
+  the run extends itself while the share stays high and stops once it flattens — not a
+  stagnation cut-off, since it lengthens a run that is still paying rather than truncating
+  one that is not, and the cooling schedule simply derives from the extended budget; and
+  the **baseline spread as a free prior**, known before the search at ~1% of its cost,
+  weakest of the three because it is a prediction rather than an observation of the run.
+- **The re-run the scaled experiment could not be**: its 50 cells were selected as the
+  cheapest per (stratum, budget) pair, and cheap correlates with converged, so it measures
+  a typical cell and not a starving one. Selecting instead by loss against the best
+  baseline — or by the share/R combination above — is the experiment that would establish
+  the gradient in §7b on the cells that matter, and it rests on five probe cells today.
 - **A σ-greedy baseline** (Kimura's own proposed method), which is the stronger opponent
   and the one that would make §1.1's argument empirical rather than cited. The exact
   reformulation that avoids his sample loss is derived in §II.5 below.

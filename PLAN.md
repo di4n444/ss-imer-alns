@@ -109,12 +109,22 @@ finished, so chapter 7 has everything it needs in `data/results.csv`.
 - [x] Typical-budget cells at 20 / 35 / 50 % of each source's out-degree
 - [x] Out-of-sample validation on every cell, with the SAA−MC gap recorded per row
 - [x] Iteration probe (REPORT §7b) — the one result that changes the headline's hedging
+- [x] Scaled re-run: 50 cells at `max_iter = min(100k, 2000)` → `data/results_scaled.csv`.
+      A **chapter 7 result**, not a chapter 8 proposal — raising the budget globally was
+      measured, and the gain was small on average and concentrated in the worst cells.
+- [x] Improvement-share diagnostic on 5 cells → `data/iteration_probe.csv`
 
 Not done, and chapter 8 material rather than gaps to fill before writing:
 
 - [ ] Seed-to-seed spread. One RNG seed throughout, so tie-break variance is acknowledged
       and not measured. Do not imply otherwise in chapter 7.
-- [ ] Iteration budget scaled with k and out-degree — see REPORT §7b.
+- [ ] **Allocating iterations by need** — the successor to the scaled re-run, since that
+      re-run is what rules out simply raising the constant (REPORT §7b, §8). Two-pass on
+      the share/R combination, then the dynamic self-extending budget; the baseline spread
+      is the cheap prior and the weakest of the three.
+- [ ] The re-run selected by *loss against a baseline* rather than by cost. The scaled 50
+      were the cheapest per stratum, so cheap ≈ converged, and "does more search rescue a
+      struggling cell" still rests on the five probe cells.
 - [ ] A σ-greedy baseline (REPORT §II.5).
 - [ ] Do the greedy baselines reach the enumerated optimum on small sources (out ≤ 10)?
       Separates a weak *criterion* from a weak *search*.
@@ -132,12 +142,24 @@ Chapters, in the agreed structure:
 - [x] 6. Implementacija i eksperimentalni postav — 6.1 architecture, 6.2 frozen scenarios,
       6.3 source sample, 6.4 measures and protocol
 - [ ] 7. Rezultati i rasprava. Data is ready in `data/results.csv`. Read it, do not
-      retype it. Structure agreed: **7.1 validity of the estimate** (the SAA−MC gap,
-      before any method comparison), then the method comparison, then the budget sweeps.
-      Lead with ALNS against each criterion individually — the per-cell best baseline is
-      an oracle, not a method (REPORT §7a).
+      retype it. One subsection per question in REPORT §7a, in this order:
+      - **7.1 Valjanost procjene** — the SAA−MC gap, median and spread, in both
+        directions. First, because it says how much of any later difference is fitted to
+        the frozen sample.
+      - **7.2 Usporedba metoda** — tags `population`, `k-sweep`, `typical`; ALNS against
+        each criterion individually (better/tied/worse and mean ΔR). The per-cell best
+        baseline is an **oracle**, reported after the table and labelled a bound, never
+        leading (REPORT §7a).
+      - **7.3 Ovisnost o proračunu uklanjanja** — tag `k-sweep` only, R against k per
+        source, the three sweeps never pooled.
+      - **7.4 Utjecaj duljine pretrage** — `results_scaled.csv` paired per-cell against
+        the same cells, the gradient by prior performance, and the four cells that got
+        *worse*, which is 7.1's overfitting seen as a cost of search effort. State the
+        selection bias before the result. Hands off to chapter 8.
 - [ ] 8. Mogućnosti poboljšanja i budući rad. Already promised by the text: the σ-greedy
-      of REPORT §II.5 is named in 5.1 as the next step, so it has to appear here.
+      of REPORT §II.5 is named in 5.1 as the next step, so it has to appear here. The
+      iteration item is **allocation by need**, not a larger budget — chapter 7 has
+      already measured the larger budget and shown it buys little on average.
 - [ ] Zaključak, Sažetak, Summary
 
 All figures for chapters 1–6 exist (13): `fig1_1` ER/WS/BA, `fig1_2` live-edge, `fig2_1`
