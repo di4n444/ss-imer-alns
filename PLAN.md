@@ -52,6 +52,11 @@ cd ss-imer-alns/thesis
 ../.venv/bin/python build_thesis.py         # -> "... - nacrt.docx" beside the original
 ```
 
+```bash
+cd ss-imer-alns/code
+../.venv/bin/python make_result_figures.py  # chapter 7 figures -> ../figures/
+```
+
 ### Which file to edit
 
 `build_thesis.py` **reads** `Optimizacija protoka informacije u grafovima.docx` and
@@ -82,8 +87,8 @@ measurement gets truncated rather than slowed.
 `code/measure.py`. See REPORT §7a for what each tag holds and how the methods may
 and may not be compared.
 
-**Phase 3 (thesis) — chapters 1–6 written, 7 and 8 outstanding.** The measurement is
-finished, so chapter 7 has everything it needs in `data/results.csv`.
+**Phase 3 (thesis) — chapters 1–7 written, 8 outstanding**, then the Zaključak and the two
+abstracts. Chapter 7's findings are recorded in REPORT §7a, and chapter 8 argues from them.
 
 ### Done
 
@@ -141,8 +146,10 @@ Chapters, in the agreed structure:
 - [x] 5. Metode rješavanja
 - [x] 6. Implementacija i eksperimentalni postav — 6.1 architecture, 6.2 frozen scenarios,
       6.3 source sample, 6.4 measures and protocol
-- [ ] 7. Rezultati i rasprava. Data is ready in `data/results.csv`. Read it, do not
-      retype it. One subsection per question in REPORT §7a, in this order:
+- [x] 7. Rezultati i rasprava — written, four subsections, every number read from the CSVs
+      at build time through `code/results_analysis.py`. Three figures
+      (`fig7_1_saa_mc`, `fig7_2_k_sweep`, `fig7_3_scaled_gain`) from
+      `code/make_result_figures.py`. The structure as agreed:
       - **7.1 Valjanost procjene** — the SAA−MC gap, median and spread, in both
         directions. First, because it says how much of any later difference is fitted to
         the frozen sample.
@@ -162,12 +169,13 @@ Chapters, in the agreed structure:
       already measured the larger budget and shown it buys little on average.
 - [ ] Zaključak, Sažetak, Summary
 
-All figures for chapters 1–6 exist (13): `fig1_1` ER/WS/BA, `fig1_2` live-edge, `fig2_1`
-degree distribution, `fig2_2` probability distribution, `fig2_3` bow-tie, `fig2_4` source
-reach, `fig2_5` out-degree composition, `fig3_base/near/choke` the choke-point sequence,
-`fig5_1` ALNS loop, `fig5_2` hop layers, `fig6_1` pipeline. Chapter 7 needs its own, drawn
-from `data/results.csv`; draw them at their printed width with body-sized type, as
-`thesis/figures.py` explains, or the lettering is unreadable on A4.
+All 16 figures exist: `fig1_1` ER/WS/BA, `fig1_2` live-edge, `fig2_1` degree distribution,
+`fig2_2` probability distribution, `fig2_3` bow-tie, `fig2_4` source reach, `fig2_5`
+out-degree composition, `fig3_base/near/choke` the choke-point sequence, `fig5_1` ALNS loop,
+`fig5_2` hop layers, `fig6_1` pipeline, `fig7_1` SAA vs MC, `fig7_2` the k-sweeps, `fig7_3`
+the scaled gain. Anything chapter 8 adds goes in `code/make_result_figures.py` if it reads
+data and in `thesis/figures.py` if it does not — and is drawn at its printed width with
+body-sized type, as `thesis/figures.py` explains, or the lettering is unreadable on A4.
 
 **Structure is fixed and subsections are not to be added.** The agreed outline above is
 what the chapters follow; the first draft grew extra subsections for design dilemmas and

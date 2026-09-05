@@ -381,6 +381,44 @@ Mean R: ALNS 0.650, probability 0.637, then a clear gap to degree at 0.440. The 
 has median +0.016. **Recompute all of this from the CSV rather than quoting these figures**
 — they are here to say what shape the answer takes, not to be copied into the thesis.
 
+### Four findings the aggregate table hides
+
+All four came out of writing chapter 7 against the CSVs, and all four are recomputed there
+at build time by `code/results_analysis.py`.
+
+**ALNS effectively ties the oracle.** Mean R 0.6578 against the per-cell best-of-six at
+0.6582 — under a thousandth — and ALNS matches or beats that hindsight bound in 69 of 95
+cells. The oracle was framed above as a bound to report *after* the per-criterion table,
+which stands; the point is that it turns out to be a bound the method nearly reaches. This
+is the strongest claim the measurement supports and it should be stated exactly that
+narrowly: one search with no instance-specific knowledge does as well as knowing in advance
+which of six criteria wins on each instance.
+
+**The one real loss is located, not general.** Against `probability`, ALNS is +0.094 on
+reach 10–100 (n=9) and +0.062 on 100–400 (n=31), but **−0.022 on the 55 saturated cells** —
+and since those are the majority of the sample, they are what drags the pooled advantage
+down to +0.016. By budget share the same shape: +0.003 at k/out ≤ 20% (11 better, 7 worse,
+near a coin flip) rising to +0.038 at 40–70%. Saturated sources and small budget shares are
+one phenomenon, and §7b says why: those cells are starving at 300 iterations. So the
+comparison and the iteration question are one story, not two.
+
+**The SAA−MC gap is a cost of searching, not a property of the estimator.** ALNS's median
+gap is +0.0159; no baseline's exceeds +0.0030. The estimator is identical for all of them —
+the baselines simply never look at the sample, so they have nothing to overfit. Two of the
+three cells with |gap| > 0.10 are the same low-out-degree source at small k, where few
+distinct cuts exist to tell apart. The practical consequence for the text: differences of a
+few hundredths are not decisive for anyone.
+
+**Non-monotonicity in k is a self-diagnosing search failure.** On the hub sweep ALNS scores
+0.037 at k = 20 having scored 0.141 at k = 15. The optimum cannot do that: a cut of size
+k−1 plus any further edge is feasible at k, and σ is monotone in the cut, so optimal R is
+non-decreasing in k. A dip is therefore a missed optimum and nothing else — no oracle, no
+stronger opponent and no ground truth needed to see it. No baseline dips on any of the
+three sweeps, since their result is a ranking rather than a search. This is the cheapest
+starvation detector found so far, and it is worth putting beside the improvement-share
+diagnostic in chapter 8. Note the scaled re-run covers this source at k = 15 and k = 18 but
+**not** at k = 20, so the dip itself has not been re-run longer.
+
 A caution learned twice on this run: a partial or differently-composed set of cells gives a
 materially different picture. At 43 cells ALNS merely drew with `probability` (−0.005),
 because that set was dominated by hub cells at budgets too small for any method. Never
@@ -474,8 +512,10 @@ reasons unrelated to search. Select by the *loss against a baseline* instead.
 enough depends on where the good cut lies, which is the thing being searched for. Two
 signals avoid guessing.
 
-**The baselines are a free prior.** They run before ALNS in the same cell and cost about 1%
-of it, so their spread is known before the search starts: if all six achieve nearly nothing
+**The baselines are a free prior.** They run before ALNS in the same cell and all six
+together cost about 7% of it — one criterion is about 1%, and the prior needs the spread
+across all of them — so that spread is known before the search starts: if all six achieve
+nearly nothing
 the instance either needs real search or is hopeless, and `k/out(s)` separates those two
 readings. Worth one sentence in chapter 8 as the cheapest available signal, though weaker
 than the improvement share because it is a prior rather than an observation of the run.
@@ -565,6 +605,10 @@ gains.
   one that is not, and the cooling schedule simply derives from the extended budget; and
   the **baseline spread as a free prior**, known before the search at ~1% of its cost,
   weakest of the three because it is a prediction rather than an observation of the run.
+- **Non-monotonicity as a second detector.** A dip in R as k grows is a proof of a missed
+  optimum (§7a), needs no ground truth, and costs nothing beyond a sweep that is already
+  being run. It detects starvation on instances where the improvement share would have to
+  be paired with a low R to say the same thing. Worth stating beside the share diagnostic.
 - **The re-run the scaled experiment could not be**: its 50 cells were selected as the
   cheapest per (stratum, budget) pair, and cheap correlates with converged, so it measures
   a typical cell and not a starving one. Selecting instead by loss against the best

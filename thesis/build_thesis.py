@@ -31,6 +31,7 @@ CHAPTERS = [
     "ch04_kriteriji",
     "ch05_metode",
     "ch06_implementacija",
+    "ch07_rezultati",
 ]
 
 
