@@ -137,16 +137,18 @@ def _small_world(t, figures, topo):
         "Bitcoin Alphe to odražava strukturu u kojoj nekoliko vrlo aktivnih trgovaca "
         "ocjenjuje velik broj povremenih korisnika.")
 
-    t.p("Raspodjela izlaznih stupnjeva ispitana je prilagodbom zakona potencije metodom "
-        "najveće izglednosti uz automatski odabir donje granice ", sub(v("k"), up("min")),
+    t.p("Raspodjela izlaznih stupnjeva ispitana je postupkom koji {~clauset2009} "
+        "predlažu za empirijske podatke: prilagodbom zakona potencije metodom najveće "
+        "izglednosti uz automatski odabir donje granice ", sub(v("k"), up("min")),
         ". Procijenjeni eksponent iznosi ", v("γ"), " = ", _n(topo.out_gamma, 3), " uz ",
         sub(v("k"), up("min")), " = ", _int(topo.out_xmin), " i Kolmogorov-Smirnovljevu "
         "statistiku ", _n(topo.out_ks, 3), ". Ta vrijednost eksponenta smješta mrežu u "
         "raspon između 2 i 3 koji {~albert2002} navode kao tipičan za stvarne mreže.")
 
     t.p("Sama prilagodba, međutim, nije dovoljna da bi se raspodjela proglasila zakonom "
-        "potencije, pa je model uspoređen s drugim raspodjelama s teškim repom omjerom "
-        "izglednosti. Zakon potencije uvjerljivo nadmašuje eksponencijalnu raspodjelu "
+        "potencije. {~clauset2009} upozoravaju da se prilagođeni model uvijek mora "
+        "usporediti s drugim raspodjelama s teškim repom, pa je provedena i takva "
+        "usporedba omjerom izglednosti. Zakon potencije uvjerljivo nadmašuje eksponencijalnu raspodjelu "
         "(", v("R"), " = ", _n(topo.out_R_vs_exponential, 1), "), što potvrđuje da rep "
         "raspodjele doista jest težak. Istodobno gubi od skraćenog zakona potencije "
         "(", v("R"), " = ", _n(topo.out_R_vs_truncated_power_law, 1), "), lognormalne "

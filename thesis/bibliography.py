@@ -22,6 +22,7 @@ SOURCES = [
     ("wang2003", "Wang i sur.", 2003),
     ("ropke2006", "Røpke i Pisinger", 2006),
     ("kimura2008", "Kimura i sur.", 2008),
+    ("clauset2009", "Clauset i sur.", 2009),
     ("antulov2008", "Antulov-Fantulin", 2008),
     ("castellano2010", "Castellano i Pastor-Satorras", 2010),
     ("sheldon2010", "Sheldon i sur.", 2010),
@@ -104,6 +105,8 @@ ENTRIES = {
         "Røpke, S., Pisinger, D. An Adaptive Large Neighborhood Search Heuristic for the Pickup and Delivery Problem with Time Windows. Transportation Science, vol. 40, br. 4, 2006.",
     "kimura2008":
         "Kimura, M., Saito, K., Nakano, R., Motoda, H. On the Contamination Minimization Problem in Social Networks. U: Proceedings of the 2008 Joint Conference on Information Sciences, 2008.",
+    "clauset2009":
+        "Clauset, A., Shalizi, C. R., Newman, M. E. J. Power-Law Distributions in Empirical Data. SIAM Review, vol. 51, br. 4, 2009.",
     "antulov2008":
         "Antulov-Fantulin, N. Utjecaj zaraze na svojstva kompleksne mreže. Završni rad br. 243. Zagreb: Fakultet elektrotehnike i računarstva, Sveučilište u Zagrebu, 2008.",
     "castellano2010":
