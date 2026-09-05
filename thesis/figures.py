@@ -90,8 +90,62 @@ def live_edge_figure(path):
     return path
 
 
+def source_population_figure(path, profile_csv):
+    """What the source population actually looks like.
+
+    Two facts the sampling design turns on: reach is a smooth heavy-tailed continuum
+    rather than two separated groups, and most nodes cannot serve as a source at all
+    because a budget must stay below the out-degree."""
+    import pandas as pd
+
+    profile = pd.read_csv(profile_csv)
+    usable = profile[profile.out_degree > 0]
+
+    fig, (left, right) = plt.subplots(1, 2, figsize=(11.0, 3.8))
+
+    ordered = usable.sigma0_saa.sort_values().to_numpy()
+    share = [(i + 1) / len(ordered) for i in range(len(ordered))]
+    left.plot(ordered, share, color=INK, linewidth=1.6)
+    left.set_xscale("log")
+    left.set_xlabel("očekivani doseg $\\sigma_0$ (logaritamska skala)", fontsize=9)
+    left.set_ylabel("kumulativni udio izvora", fontsize=9)
+    left.set_title("a) raspodjela dosega po izvorima", **FONT)
+    left.grid(alpha=0.25, linewidth=0.6)
+    left.axvline(400, color=HIGHLIGHT, linestyle=(0, (4, 3)), linewidth=1.2)
+    left.text(430, 0.12, "zasićeni izvori", color=HIGHLIGHT, fontsize=8)
+
+    bands = [(1, 4), (4, 10), (10, 20), (20, 50), (50, 10 ** 9)]
+    labels = ["1–3", "4–9", "10–19", "20–49", "50+"]
+    low, high = [], []
+    for lo, hi in bands:
+        sel = (usable.out_degree >= lo) & (usable.out_degree < hi)
+        high.append(int((sel & (usable.sigma0_saa >= 400)).sum()))
+        low.append(int((sel & (usable.sigma0_saa < 400)).sum()))
+    right.bar(labels, low, color="#D8D8D8", edgecolor=INK, linewidth=0.7,
+              label="$\\sigma_0 < 400$")
+    right.bar(labels, high, bottom=low, color=FILL, edgecolor=INK, linewidth=0.7,
+              label="$\\sigma_0 \\geq 400$")
+    right.set_xlabel("izlazni stupanj izvora", fontsize=9)
+    right.set_ylabel("broj čvorova", fontsize=9)
+    right.set_title("b) izlazni stupanj i doseg", **FONT)
+    right.legend(fontsize=8, frameon=False)
+    right.grid(axis="y", alpha=0.25, linewidth=0.6)
+    # the first band cannot support the smallest budget studied
+    right.text(0, low[0] + high[0] + 40, "ne mogu biti izvor\nza k ≥ 3", ha="center",
+               fontsize=8, color=HIGHLIGHT)
+    right.set_ylim(0, max(a + b for a, b in zip(low, high)) * 1.28)
+
+    fig.tight_layout()
+    fig.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
 if __name__ == "__main__":
     from pathlib import Path
     out = Path(__file__).resolve().parent.parent / "figures"
     out.mkdir(exist_ok=True)
+    data = Path(__file__).resolve().parent.parent / "data"
     print("wrote", live_edge_figure(out / "fig1_2_live_edge.png"))
+    print("wrote", source_population_figure(out / "fig2_4_source_population.png",
+                                            data / "source_profile.csv"))

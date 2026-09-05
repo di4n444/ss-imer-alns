@@ -11,8 +11,10 @@ Run: python build_thesis.py
 import warnings
 from pathlib import Path
 
+import bibliography as bib
 import docx
 
+import bibliography as bib
 import doc
 
 warnings.filterwarnings("ignore", message="style lookup by style_id")
@@ -24,6 +26,7 @@ OUTPUT = ROOT / "Optimizacija protoka informacije u grafovima - nacrt.docx"
 
 CHAPTERS = [
     "ch01_topologija",
+    "ch02_bitcoin_alpha",
 ]
 
 
@@ -42,6 +45,8 @@ def main():
     for name in CHAPTERS:
         module = __import__(name)
         module.write(thesis, FIGURES)
+
+    doc.write_bibliography(document, bib.sorted_entries())
 
     document.save(OUTPUT)
 

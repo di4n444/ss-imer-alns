@@ -243,3 +243,39 @@ def numbering_into_heading_styles(document, numbering, unnumbered=()):
     for p in document.paragraphs:
         if p.style.name.startswith("Heading") and p.text.strip() in titles:
             _suppress_numbering(p)
+
+
+def write_bibliography(document, entries, after="Literatura", before=None):
+    """Replace the bibliography list with `entries`, keeping the heading in place."""
+    heading = marker = None
+    for p in document.paragraphs:
+        if p.style.name == "Heading 1" and p.text.strip() == after:
+            heading = p
+        elif heading is not None and p.style.name == "Heading 1":
+            marker = p
+            break
+    if heading is None:
+        raise ValueError(f"heading '{after}' not found")
+
+    # Compare the underlying XML elements, not the Paragraph wrappers: python-docx
+    # builds fresh wrapper objects on every access, so identity between two reads of
+    # document.paragraphs never holds and the old list would survive alongside the new.
+    body = document.element.body
+    heading_el = heading._p
+    marker_el = marker._p if marker is not None else None
+    started = False
+    for p in list(document.paragraphs):
+        if p._p is heading_el:
+            started = True
+            continue
+        if not started:
+            continue
+        if marker_el is not None and p._p is marker_el:
+            break
+        body.remove(p._p)
+
+    anchor = marker._p if marker is not None else None
+    for entry in entries:
+        paragraph = document.add_paragraph(entry)
+        if anchor is not None:
+            anchor.addprevious(paragraph._p)

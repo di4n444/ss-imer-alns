@@ -80,3 +80,63 @@ def expand(text: str) -> str:
             out.append(cite(*keys))
     out.append(rest)
     return "".join(out)
+
+
+# Full bibliography entries, in the faculty template's citation format.
+ENTRIES = {
+    "erdos1960":
+        "Erdős, P., Rényi, A. On the Evolution of Random Graphs. Publicationes Mathematicae Debrecen, vol. 6, 1960.",
+    "granovetter1973":
+        "Granovetter, M. S. The Strength of Weak Ties. American Journal of Sociology, vol. 78, br. 6, 1973.",
+    "valiant1979":
+        "Valiant, L. G. The complexity of enumeration and reliability problems. SIAM Journal on Computing, vol. 8, br. 3, 1979.",
+    "watts1998":
+        "Watts, D. J., Strogatz, S. H. Collective dynamics of 'small-world' networks. Nature, vol. 393, 1998.",
+    "albert2000":
+        "Albert, R., Jeong, H., Barabási, A.-L. Error and attack tolerance of complex networks. Nature, vol. 406, 2000.",
+    "albert2002":
+        "Albert, R., Barabási, A.-L. Statistical mechanics of complex networks. Reviews of Modern Physics, vol. 74, br. 1, 2002.",
+    "kempe2003":
+        "Kempe, D., Kleinberg, J., Tardos, É. Maximizing the Spread of Influence through a Social Network. U: Proceedings of the ninth ACM SIGKDD international conference on Knowledge discovery and data mining, 2003.",
+    "wang2003":
+        "Wang, Y., Chakrabarti, D., Wang, C., Faloutsos, C. Epidemic Spreading in Real Networks: An Eigenvalue Viewpoint. U: 22nd International Symposium on Reliable Distributed Systems (SRDS), 2003.",
+    "ropke2006":
+        "Røpke, S., Pisinger, D. An Adaptive Large Neighborhood Search Heuristic for the Pickup and Delivery Problem with Time Windows. Transportation Science, vol. 40, br. 4, 2006.",
+    "kimura2008":
+        "Kimura, M., Saito, K., Nakano, R., Motoda, H. On the Contamination Minimization Problem in Social Networks. U: Proceedings of the 2008 Joint Conference on Information Sciences, 2008.",
+    "antulov2008":
+        "Antulov-Fantulin, N. Utjecaj zaraze na svojstva kompleksne mreže. Završni rad br. 243. Zagreb: Fakultet elektrotehnike i računarstva, Sveučilište u Zagrebu, 2008.",
+    "castellano2010":
+        "Castellano, C., Pastor-Satorras, R. Thresholds for Epidemic Spreading in Networks. Physical Review Letters, vol. 105, br. 21, 2010.",
+    "sheldon2010":
+        "Sheldon, D., Dilkina, B., Elmachtoub, A., Finseth, R., Sabharwal, A., Conrad, J., Gomes, C., Shmoys, D., Phillips, A. Maximizing the Spread of Cascades Using Network Design. U: Proceedings of the 26th Conference on Uncertainty in Artificial Intelligence (UAI), 2010.",
+    "tong2012":
+        "Tong, H., Prakash, B. A., Eliassi-Rad, T., Faloutsos, M., Faloutsos, C. Gelling, and Melting, Large Graphs by Edge Manipulation. U: IEEE 12th International Conference on Data Mining, 2012.",
+    "khalil2014":
+        "Khalil, E. B., Dilkina, B., Song, L. Scalable diffusion-aware optimization of network topology. U: Proceedings of the 20th ACM SIGKDD international conference on Knowledge discovery and data mining, 2014.",
+    "kumar2016":
+        "Kumar, S., Spezzano, F., Subrahmanian, V. S., Faloutsos, C. Edge Weight Prediction in Weighted Signed Networks. U: IEEE International Conference on Data Mining (ICDM), 2016.",
+    "kumar2018":
+        "Kumar, S., Hooi, B., Makhija, D., Kumar, M., Subrahmanian, V. S., Faloutsos, C. REV2: Fraudulent User Prediction in Rating Platforms. U: 11th ACM International Conference on Web Search and Data Mining (WSDM), 2018.",
+    "coro2021":
+        "Coró, F., Castiglioni, M., Ferraioli, D., Gatti, N. Link Recommendation for Social Influence Maximization. U: Proceedings of the AAAI Conference on Artificial Intelligence, vol. 35, br. 6, 2021.",
+    "castiglioni2021":
+        "Castiglioni, M., Ferraioli, D., Gatti, N. Election Manipulation on Social Networks: Seeding, Edge Removal, and Edge Addition. U: Proceedings of the AAAI Conference on Artificial Intelligence, vol. 35, br. 6, 2021.",
+    "predavanja":
+        "Predavanja na kolegiju Kompleksne mreže. Fakultet elektrotehnike i računarstva, Sveučilište u Zagrebu, prezentacije.",
+}
+
+
+def sorted_entries():
+    """The bibliography, alphabetically by author.
+
+    Author-year citations are looked up by name, so the list has to be ordered by name;
+    a chronological list would force the reader to scan the whole thing for every
+    citation. Sorting the rendered entry sorts on the leading surname."""
+    import unicodedata
+
+    def key(entry):
+        stripped = unicodedata.normalize("NFKD", entry)
+        return "".join(c for c in stripped if not unicodedata.combining(c)).lower()
+
+    return sorted(ENTRIES.values(), key=key)
