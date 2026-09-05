@@ -66,7 +66,6 @@ code/
   run_experiment.py     orchestration -> one CSV row per (source, k, method)
   calibrate.py          R&P one-at-a-time parameter tuning -> CSV
   smoke_test.py         end-to-end pipeline check with timings
-  test_evaluator.py     regression tests for the objective function
   make_topology_figures.py  Chapter 1-2 figures, generated from the CSVs
   test_evaluator.py     objective pinned against an igraph oracle
   test_features.py      spectral index alignment, three independent ways
@@ -82,8 +81,9 @@ data/                   raw dataset + generated topology/feature/sample/result C
 figures/                generated only from CSVs or from figures.py
 ```
 
-`PILOT_TESTS.md` documents lessons (including bugs to avoid) from an earlier, discarded
-implementation — kept as a reference, not as code.
+[PILOT_TESTS.md](PILOT_TESTS.md) records decisions and bugs-to-avoid from an earlier,
+discarded implementation. **None of its numbers describe this system** — it opens with a
+warning to that effect, and its still-binding decisions are summarised at the top.
 
 ## Status / process
 
