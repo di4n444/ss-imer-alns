@@ -3,7 +3,7 @@
 Sources read for this chapter, in the order they are used: Erdos & Renyi (1960) for the
 random-graph baseline; Watts & Strogatz (1998) for the small-world construction and the
 L / C measures; Albert & Barabasi (2002) for the scale-free review and the preferential
-attachment mechanism; Albert, Jeong & Barabasi (2000) for error and attack tolerance;
+attachment mechanism, and for error and attack tolerance (their section IX);
 Kempe, Kleinberg & Tardos (2003) for the Independent Cascade model and the live-edge
 equivalence (their Claim 2.3); Kimura et al. (2008) for the ICM rules restated for a
 blocking problem; Wang et al. (2003) and Castellano & Pastor-Satorras (2010) for the two
@@ -48,6 +48,12 @@ def _uvod(t):
         "jer omogućuje predviđanje i, što je za ovaj rad ključno, upravljanje širenjem "
         "informacije ili zaraze.")
 
+    t.p("Optimizacija na mrežama zbog toga ima široku primjenu, i to u područjima koja "
+        "međusobno nemaju mnogo zajedničkog. Koristi se za kontrolu manipulacije izbornim "
+        "ishodima {castiglioni2021}, za unapređenje sustava preporuka na društvenim "
+        "mrežama {coro2021}, pa i u ekologiji, gdje se istim okvirom planira strateško "
+        "povezivanje ugroženih staništa {sheldon2010}.")
+
     t.p("U ovom se radu razmatra minimizacija utjecaja ciljanim uklanjanjem bridova. "
         "{~castiglioni2021} taj problem definiraju pod nazivom ",
         i("Influence-Minimization-by-Edge-Removal"), " (IMER): za zadani graf, skup "
@@ -60,7 +66,7 @@ def _uvod(t):
         "imenovanja inačica optimizacijskih problema i nisu ustaljen naziv u literaturi.")
 
     t.p("Rani pristupi kontroli širenja oslanjali su se na uklanjanje čvorova "
-        "{albert2000}, no u stvarnim je sustavima brisanje korisničkih računa često "
+        "{albert2002}, no u stvarnim je sustavima brisanje korisničkih računa često "
         "pravno, poslovno ili etički neizvedivo. Uklanjanje bridova blaža je intervencija "
         "koja mijenja topologiju bez uklanjanja samih aktera {tong2012}, pa je zato i "
         "praktično privlačnija. Najbliži je algoritamski predak ovoga rada problem "
@@ -206,7 +212,7 @@ def _scale_free(t):
         "novi čvorovi radije povezuju s čvorovima koji već imaju visok stupanj, čime "
         "povezaniji čvorovi postaju sve povezaniji.")
 
-    t.p("Asimetrija stupnjeva ima izravne posljedice na otpornost sustava. {~albert2000} "
+    t.p("Asimetrija stupnjeva ima izravne posljedice na otpornost sustava. {~albert2002} "
         "pokazuju da su mreže bez skale iznimno otporne na slučajne kvarove, jer "
         "nasumičan gubitak čvora gotovo sigurno pogađa neki od brojnih slabo povezanih "
         "čvorova, ali su istodobno vrlo osjetljive na ciljane napade: uklanjanje malog "

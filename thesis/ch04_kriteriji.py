@@ -3,8 +3,9 @@
 Sources: Granovetter (1973) for the local bridge and the weak-tie argument; Tong et al.
 (2012) for the eigen-score u(i)v(j) and its first-order justification; Kimura et al. (2008)
 for betweenness, out-degree and random as the established comparison heuristics and for his
-finding that blocking links between high-out-degree nodes is not necessarily effective;
-Albert et al. (2000) for the hub-targeting intuition the degree criterion rests on.
+finding that blocking links between high-out-degree nodes is not necessarily effective, and
+for the out-degree product 4.3 argues against; Albert & Barabasi (2002) for the
+hub-targeting intuition the degree criterion rests on.
 
 Six criteria in 4.1-4.6, tie-breaking in 4.7. The distinct-value counts in 4.7 are read
 from data/edge_features.csv at build time: they are the quantitative statement of the tie
@@ -112,7 +113,7 @@ def _degree(t):
     t.eq(ifunc("c", [v("e"), up(" = "), delim(v("u"), up(", "), v("w"))]), up(" = "),
          ifunc("out", v("u")), up(" + "), ifunc("out", v("w")), label="crit_deg")
 
-    t.p("Ideja je prenesena s razine čvorova: {~albert2000} pokazuju da mreže bez skale "
+    t.p("Ideja je prenesena s razine čvorova: {~albert2002} pokazuju da mreže bez skale "
         "gube povezanost kada se ukloni malen broj čvorišta, pa je prirodno pretpostaviti "
         "da su i bridovi koji dodiruju čvorišta strukturno najvažniji. Ta se pretpostavka, "
         "međutim, u literaturi o blokiranju bridova ne potvrđuje: {~kimura2008} zaključuju "

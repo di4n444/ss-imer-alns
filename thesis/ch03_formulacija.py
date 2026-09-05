@@ -4,8 +4,8 @@ Sources: Kempe et al. (2003) for influence maximization, its NP-hardness and the
 submodularity that licenses the greedy guarantee; Kimura et al. (2008) for the
 contamination minimization problem and its exact-cardinality budget; Castiglioni et al.
 (2021) for the IMER definition and the inapproximability result; Valiant (1979) for the
-#P-completeness of two-terminal reliability; Tong et al. (2012) for the non-additivity of
-edge removal.
+#P-completeness of two-terminal reliability; Tong et al. (2012) for edge removal as the
+milder intervention.
 
 Four sections, matching the agreed structure. The chapter states what the problem is and
 why it is hard; it does not narrate how the formulation was arrived at.
@@ -65,7 +65,7 @@ def _srodni(t):
         "pohlepni pristup, koji je u ovom području potom postao uobičajen.")
 
     t.p("Zrcalni je problem sprječavanje širenja. Ono se može izvesti uklanjanjem čvorova, "
-        "čime {~albert2000} pokazuju krhkost mreža bez skale, ili uklanjanjem bridova. "
+        "čime {~albert2002} pokazuju krhkost mreža bez skale, ili uklanjanjem bridova. "
         "Uklanjanje brida blaža je intervencija jer ne uklanja sudionika iz mreže nego "
         "samo jedan kanal među dvama sudionicima {tong2012}, pa je u primjenama u kojima "
         "su sudionici stvarni korisnici često i jedina izvediva.")

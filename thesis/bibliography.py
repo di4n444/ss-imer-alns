@@ -17,7 +17,6 @@ SOURCES = [
     ("valiant1979", "Valiant", 1979),
     ("watts1998", "Watts i Strogatz", 1998),
     ("mak1999", "Mak i sur.", 1999),
-    ("albert2000", "Albert i sur.", 2000),
     ("albert2002", "Albert i Barabási", 2002),
     ("kleywegt2002", "Kleywegt i sur.", 2002),
     ("kempe2003", "Kempe i sur.", 2003),
@@ -25,6 +24,8 @@ SOURCES = [
     ("hoos2004", "Hoos i Stützle", 2004),
     ("ropke2006", "Røpke i Pisinger", 2006),
     ("leskovec2007", "Leskovec i sur.", 2007),
+    ("sheldon2010", "Sheldon i sur.", 2010),
+    ("coro2021", "Coró i sur.", 2021),
     ("kimura2008", "Kimura i sur.", 2008),
     ("clauset2009", "Clauset i sur.", 2009),
     ("antulov2008", "Antulov-Fantulin", 2008),
@@ -102,8 +103,6 @@ ENTRIES = {
         "Hoos, H. H., Stützle, T. Stochastic Local Search: Foundations and Applications. San Francisco: Morgan Kaufmann, 2004.",
     "leskovec2007":
         "Leskovec, J., Krause, A., Guestrin, C., Faloutsos, C., VanBriesen, J., Glance, N. Cost-effective Outbreak Detection in Networks. U: Proceedings of the 13th ACM SIGKDD international conference on Knowledge discovery and data mining, 2007.",
-    "albert2000":
-        "Albert, R., Jeong, H., Barabási, A.-L. Error and attack tolerance of complex networks. Nature, vol. 406, 2000.",
     "albert2002":
         "Albert, R., Barabási, A.-L. Statistical mechanics of complex networks. Reviews of Modern Physics, vol. 74, br. 1, 2002.",
     "kempe2003":
@@ -118,6 +117,10 @@ ENTRIES = {
         "Clauset, A., Shalizi, C. R., Newman, M. E. J. Power-Law Distributions in Empirical Data. SIAM Review, vol. 51, br. 4, 2009.",
     "antulov2008":
         "Antulov-Fantulin, N. Utjecaj zaraze na svojstva kompleksne mreže. Završni rad br. 243. Zagreb: Fakultet elektrotehnike i računarstva, Sveučilište u Zagrebu, 2008.",
+    "sheldon2010":
+        "Sheldon, D., Dilkina, B., Elmachtoub, A., Finseth, R., Sabharwal, A., Conrad, J., Gomes, C., Shmoys, D., Allen, W., Amundsen, O., Vaughan, B. Maximizing the Spread of Cascades Using Network Design. U: Proceedings of the 26th Conference on Uncertainty in Artificial Intelligence (UAI), 2010.",
+    "coro2021":
+        "Coró, F., D'Angelo, G., Velaj, Y. Link Recommendation for Social Influence Maximization. ACM Transactions on Knowledge Discovery from Data, vol. 15, br. 6, članak 94, 2021.",
     "castellano2010":
         "Castellano, C., Pastor-Satorras, R. Thresholds for Epidemic Spreading in Networks. Physical Review Letters, vol. 105, br. 21, 2010.",
     "tong2012":
