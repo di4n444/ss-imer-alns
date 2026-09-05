@@ -303,6 +303,12 @@ equally.
 **Deterministic baselines are computed once** per (source, k) and reused across ALNS seeds;
 only `random` and ALNS vary with the seed.
 
+**The pipeline is deterministic under the fixed RNG seed, and this was observed rather than
+assumed.** The scaled re-run (§7b) sets `max_iter = min(100k, 2000)`, which at k = 3 is
+exactly the original 300, so those cells were unintentionally re-run under identical
+settings. All of them reproduced their earlier out-of-sample R to the last decimal. Worth a
+sentence in chapter 6: reproducibility here is a measured property, not a claim.
+
 ## 7. What the comparison does and does not establish
 
 Our six baselines are (a superset of) the heuristics **Kimura published as his weak
@@ -404,8 +410,10 @@ enough depends on where the good cut lies, which is the thing being searched for
 signals avoid guessing.
 
 **The baselines are a free prior.** They run before ALNS in the same cell and cost about 1%
-of it. If all six achieve nearly nothing the instance either needs real search or is
-hopeless, and `k/out(s)` separates those two readings.
+of it, so their spread is known before the search starts: if all six achieve nearly nothing
+the instance either needs real search or is hopeless, and `k/out(s)` separates those two
+readings. Worth one sentence in chapter 8 as the cheapest available signal, though weaker
+than the improvement share because it is a prior rather than an observation of the run.
 
 **Better, `run_alns` now reports when it last improved.** `last_improvement` is the
 iteration that produced the final global best and `improvement_share` is that as a fraction
@@ -415,7 +423,36 @@ rather than predicted. Measured on an easy cell: shares of 0.12 and 0.04, matchi
 re-run finding that such cells gain nothing from more iterations.
 
 This is the cheap way to allocate a second pass — run everything at a modest budget, then
-re-run only the cells whose share is high — and it costs one extra column.
+re-run only the cells whose share is high — and it costs one extra column. It could also be
+made **dynamic**: rather than a second pass, the search itself could extend its own budget
+while the share stays high and stop once it flattens. That is a different mechanism from a
+stagnation cut-off — it lengthens a run that is still paying rather than truncating one
+that is not — and it does not disturb the cooling schedule, which would simply be derived
+from the extended budget.
+
+### What the scaled re-run showed
+
+50 cells at `max_iter = min(100k, 2000)`, everything else unchanged. Of the cells that
+actually got more iterations: **4 improved, 22 unchanged, 4 got worse**, overall mean change
++0.001. Among cells already scoring R ≥ 0.6 the mean change was −0.001 — nothing at all.
+
+So the benefit of a longer search is **concentrated, not diffuse**. It does not contradict
+the probes of §7b; it completes them. The probes targeted cells where ALNS had lost, and
+gained enormously; this re-run samples ordinary cells, and gains nothing. Spending four
+times the compute uniformly buys almost nothing, which is the argument for allocating it by
+the improvement share instead of by a global constant.
+
+**Read the selection before reading the result.** These 50 were chosen as the cheapest cell
+per (stratum, budget) pair, and cheap correlates with easy — most were already converged, as
+their improvement shares confirm. The re-run therefore measures "does more search help a
+typical cell" and not "does more search help a struggling one". Do not present it as the
+latter.
+
+**Four cells got *worse* with more iterations.** That is not noise: a longer search optimises
+the frozen in-sample estimate harder, and a cut fitted more tightly to those realizations can
+score lower out of sample. It is the same overfitting the SAA−MC gap measures (§5), showing
+up as a cost of search effort, and it is worth a sentence in the discussion alongside the
+gains.
 
 ## 8. Deliberately not done — material for chapter 8
 
