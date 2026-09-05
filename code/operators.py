@@ -1,5 +1,5 @@
 """ALNS destroy and repair operators — two independently weighted families, never
-sharing a heuristic between them (REPORT.md §4/§7a; PILOT_TESTS.md §32).
+sharing a heuristic between them.
 
 Destroy picks members of the current cut D to put back into the graph. Repair picks
 new edges from the active hop-windowed pool to cut instead. Every destroy operator has
@@ -9,8 +9,8 @@ Strategy pattern here.
 
 Grounded in R&P (2006) §3.1: random removal, worst removal (Algorithm 3) and Shaw
 "related" removal (Algorithm 2), with their tuned determinism exponents
-(p_worst=3, p_Shaw=6 — see REPORT.md §6a), and Shaw relatedness as their eq. (17)
-mapped term by term onto SS-IMER (REPORT.md §14).
+(p_worst=3, p_Shaw=6 —), and Shaw relatedness as their eq. (17)
+mapped term by term onto SS-IMER.
 
 Fidelity, stated precisely because "true R&P" is a requirement of this thesis:
   - Shaw removal follows Algorithm 2 exactly, including the re-ranking against the
@@ -47,7 +47,7 @@ def destroy_worst(D: frozenset, q: int, ctx, evaluator, rng: random.Random) -> s
 
     Marginal values come from `Evaluator.marginal_values`, which computes all |D| of
     them in one pass per scenario instead of |D|+1 full sweeps — without that this
-    single operator dominated the entire runtime (REPORT.md §11).
+    single operator dominated the entire runtime.
 
     **Departure**: R&P rebuild and re-sort L *inside* the removal loop (Algorithm 3
     line 3), because removing one request changes cost(i,s) for the rest. We rank once

@@ -1,5 +1,5 @@
 """Figures for thesis Chapters 1-2, generated from analyse_graph.py's output and a
-fresh Bitcoin Alpha build. Standalone (not part of the ALNS pipeline / PLAN.md Phase 3),
+fresh Bitcoin Alpha build. Standalone (not part of the ALNS pipeline),
 since these only depend on Phase 1's topology analysis and the thesis text needed them
 now. Output: figures/*.png.
 """

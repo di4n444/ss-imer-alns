@@ -1,29 +1,27 @@
 """ALNS parameter calibration -> data/calibration.csv.
 
-REPORT.md §10: the calibration *process* is thesis content, not an internal tuning step,
-so this writes a CSV of everything tried rather than printing a conclusion. R&P calibrate
-the same way (§4.3.2): start from a working setting, vary one parameter at a time over a
-few values, keep what wins, move on.
+Answers one question: which parameter values should the ALNS run with. It is not an
+experiment and it tests no hypothesis about the results; those are answered later on the
+measurement sources, with the parameters chosen here held fixed.
 
-**The budget is 30 minutes, and that shapes the design rather than just shrinking it.**
-Runtime tracks sigma_0 (REPORT.md §11), so one saturated source costs ~25 low-reach ones
-and the composition of the calibration cells decides everything. Two phases:
+Follows Ropke & Pisinger's own tuning procedure (2006, section 4.3.2): start from a
+working setting, let one parameter take several values while the rest stay fixed, keep the
+winner, and move on to the next parameter *using the values found so far*. Sequential, not
+independent - later parameters are tuned against earlier winners.
 
-  Phase A tests one hypothesis with a mechanism behind it. ALNS lost to
-  `greedy_probability` on large hop0 pools, and R&P's `L[y^p |L|]` draw picks expected
-  rank |L|/(p+1) - so at repair_p=6 on a 486-edge hop0 it selects around rank 69 while the
-  baseline takes ranks 1-20. If that is the cause, raising repair_p should close the gap
-  *specifically on hub sources*. Expensive per run, so it is run only where the prediction
-  applies.
+Three rules, each of which was got wrong on the first attempt:
 
-  Phase B sweeps the remaining parameters one at a time on affordable cells, carrying
-  Phase A's winner.
+  1. The tuning set is fixed for the whole run, or a later parameter's winner is not
+     comparable to an earlier one's.
+  2. Cells are chosen by structure, never by outcome. Picking sources because ALNS did
+     badly on them tunes the parameters toward one regime and imports a result into the
+     calibration.
+  3. Within a cell the cheaper source is taken - a cost decision, not an outcome one, and
+     R&P do the same ("the tuning instances must have a fairly limited size").
 
-**Two limitations that follow from the budget and must be reported with any conclusion:**
-single seed, so only large effects are distinguishable from tie-break variance
-(REPORT.md §3); and the cells under-represent saturated sources relative to their ~16%
-population share, Phase A being the deliberate exception. PILOT_TESTS.md §22's own
-conclusion is the decision rule here: *"Ako razlike nisu jasne, ne dirati defaulte."*
+Budget limits: one seed where R&P use five, so only large effects clear the tie-break
+variance, and eight tuning cells. Hence the decision rule - a default changes only on a
+clear margin.
 """
 
 import time
@@ -42,155 +40,125 @@ from config import (
 from run_experiment import Workbench, run_cell, write_rows
 from sample_sources import predicted_seconds
 
-MIN_RELATIVE_GAIN = 0.02  # below this, a difference is noise at one seed - PILOT §22
+MIN_RELATIVE_GAIN = 0.02  # at one seed, less than this is not distinguishable from noise
+
+# Budget per source. The first attempt used k=3 everywhere, which was worthless: at k=3
+# the q bounds collapse to (1,1), so destroy removes one edge and repair puts one back,
+# and from a fixed warm start every parameter setting walked to the same cut on 6 of 8
+# cells - identical sigma to four decimals. Parameters cannot express a difference in a
+# 1-swap. k=10 gives q in (1,4); k must stay below out(s), so small-out sources get the
+# largest budget they can support. Kept in the results as a finding: at 1-swap budgets,
+# ALNS parameter choice is irrelevant.
+def tuning_k(out_degree: int) -> int:
+    return min(10, out_degree - 1)
+
+# Swept in this order, most-ours-first: a parameter R&P never had is a weaker inherited
+# default than one they published a tuned value for.
+SWEEP = [
+    ("repair_p", [ALNS_REPAIR_P, 20, 60]),        # no R&P analogue at all
+    ("max_hop_scope", [ALNS_MAX_HOP_SCOPE, 1]),   # ours; current value inherited untested
+    ("q_max_frac", [ALNS_Q_MAX_FRAC, 0.7]),       # adapted from R&P's xi=0.4
+    # Tested downward: cheaper, and fewer iterations previously scored better in-sample
+    # and worse out-of-sample, which is the direction worth measuring.
+    ("max_iter", [ALNS_MAX_ITER, 150]),
+]
 
 
-def budgets_for(out_degree: int) -> list:
-    """k must stay below out(s) or the instance is trivially isolated (REPORT.md §13).
-    Two budgets per source: the small-budget regime everything can support, and a larger
-    one where the source is wide enough, since PILOT_TESTS.md §25 warns that a single
-    fixed k is a map of one budget rather than a result."""
-    budgets = [3]
-    if out_degree > 10:
-        budgets.append(10)
-    elif out_degree - 1 > 3:
-        budgets.append(out_degree - 1)
-    return budgets
-
-
-def plan(sample: pd.DataFrame) -> tuple:
-    """Choose Phase A and Phase B cells and cost them *before* running anything."""
+def tuning_cells(sample: pd.DataFrame) -> list:
+    """One source per (out-degree band x reach class) cell, cheapest member of each."""
     calib = sample[sample.role == "calibration"]
-    hubs = calib.nlargest(2, "out_degree")
-    phase_a = [(int(r.source), 20, float(r.sigma0_saa)) for _, r in hubs.iterrows()]
-
-    affordable = calib[~calib.source.isin(hubs.source)].nsmallest(7, "predicted_seconds")
-    phase_b = [(int(r.source), k, float(r.sigma0_saa))
-               for _, r in affordable.iterrows()
-               for k in budgets_for(int(r.out_degree))]
-    return phase_a, phase_b
-
-
-def cost(cells: list, settings: int = 1, iteration_scale: float = 1.0) -> float:
-    return sum(predicted_seconds(s, int(300 * iteration_scale))
-               for _, _, s in cells) * settings
+    picks = calib.loc[calib.groupby("cell").sigma0_saa.idxmin()]
+    return [(int(r.source), tuning_k(int(r.out_degree)), float(r.sigma0_saa), r.cell)
+            for _, r in picks.sort_values("sigma0_saa").iterrows()]
 
 
 def main():
     started = time.time()
     sample = pd.read_csv(DATA_DIR / "sample.csv")
-    phase_a, phase_b = plan(sample)
+    cells = tuning_cells(sample)
 
-    repair_values = [ALNS_REPAIR_P, 20, 60]
-    variants = {
-        "default": {},
-        "max_iter=600": {"max_iter": 600},
-        "q_max_frac=0.7": {"q_max_frac": 0.7},
-        "max_hop_scope=1": {"max_hop_scope": 1},
-    }
-    predicted = (cost(phase_a, len(repair_values))
-                 + cost(phase_b, len(variants) - 1) + cost(phase_b, 1, 2.0))
-    print(f"plan: phase A {len(phase_a)} cells x {len(repair_values)} repair_p values, "
-          f"phase B {len(phase_b)} cells x {len(variants)} variants")
-    print(f"predicted {predicted:.0f}s against a {CALIBRATION_BUDGET_SECONDS}s budget\n")
+    per_pass = sum(predicted_seconds(s) for _, _, s, _ in cells)
+    units = sum(sum(v / ALNS_MAX_ITER if name == "max_iter" else 1.0
+                    for v in values[1:]) for name, values in SWEEP) + 1
+    print(f"tuning set: {len(cells)} cells, one per (out-band x reach) cell")
+    for source, k, sigma0, cell in cells:
+        print(f"  {cell:<28} source {source:>5}  k={k:<3} sigma0 {sigma0:>6.1f}  "
+              f"~{predicted_seconds(sigma0):>5.1f}s")
+    print(f"\none pass over the set ~{per_pass:.0f}s; "
+          f"{units:.1f} passes planned ~{per_pass * units:.0f}s "
+          f"against a {CALIBRATION_BUDGET_SECONDS}s budget\n")
 
     bench = Workbench()
     print(f"workbench ready in {time.time() - started:.0f}s\n")
-    rows = []
 
-    def spend(cells, tag, params, with_baselines):
-        for source, k, _ in cells:
+    rows, chosen = [], {}
+
+    def evaluate(tag: str, params: dict, with_baselines: bool) -> float:
+        """One pass over the tuning set; returns median R_mc, the deciding metric.
+
+        Median, not mean: R is skewed across sources and a couple of saturated cells near
+        R=0 would drag a mean around."""
+        produced = []
+        for source, k, _, _ in cells:
             if time.time() - started > CALIBRATION_BUDGET_SECONDS:
-                print(f"  ! budget exhausted, stopping before source {source} k={k}")
-                return False
+                print(f"    ! budget exhausted, stopping at source {source}")
+                break
             ev_saa, ev_mc = bench.evaluators(source)
-            rows.extend(run_cell(bench.context(source), k, ev_saa, ev_mc,
+            produced += run_cell(bench.context(source), k, ev_saa, ev_mc,
                                  seeds=(ALNS_RUN_SEED,), alns_params=params,
-                                 baselines=with_baselines, tag=tag))
-        return True
+                                 baselines=with_baselines, tag=tag)
+        rows.extend(produced)
+        alns = [r for r in produced if r["method"] == "alns"]
+        return pd.Series([r["R_mc"] for r in alns]).median() if alns else float("nan")
 
-    print("PHASE A - does repair_p explain the hub losses?")
-    for i, p in enumerate(repair_values):
-        t = time.time()
-        # Baselines only once per cell: they do not depend on ALNS parameters.
-        if not spend(phase_a, f"A repair_p={p}", {"repair_p": p}, with_baselines=(i == 0)):
-            break
-        print(f"  repair_p={p:<3} {time.time() - t:.0f}s")
+    # The reference every sweep is measured against. Baselines run once, here: they do not
+    # depend on ALNS parameters, so repeating them per setting would burn budget on
+    # identical numbers.
+    print("baseline setting (current config defaults)")
+    t = time.time()
+    reference = evaluate("default", {}, with_baselines=True)
+    print(f"  median R_mc {reference:.4f}   {time.time() - t:.0f}s\n")
 
-    frame = pd.DataFrame(rows)
-    best_p = ALNS_REPAIR_P
-    if not frame.empty:
-        alns = frame[(frame.method == "alns") & frame.tag.str.startswith("A ")]
-        if not alns.empty:
-            by_p = alns.groupby("tag").R_mc.median().sort_values(ascending=False)
-            print(f"\n  median R_mc by setting: "
-                  + ", ".join(f"{t.split('=')[1]}:{v:.4f}" for t, v in by_p.items()))
-            winner = float(by_p.iloc[0])
-            default = float(by_p.get(f"A repair_p={ALNS_REPAIR_P}", winner))
-            gain = (winner - default) / max(abs(default), 1e-9)
-            if gain > MIN_RELATIVE_GAIN:
-                best_p = int(by_p.index[0].split("=")[1])
-                print(f"  -> repair_p={best_p} ({gain:+.1%} vs default); carried into phase B")
-            else:
-                print(f"  -> no clear winner ({gain:+.1%} <= {MIN_RELATIVE_GAIN:.0%}); "
-                      f"keeping repair_p={ALNS_REPAIR_P} (PILOT_TESTS.md §22)")
+    for name, values in SWEEP:
+        print(f"sweeping {name} (carrying {chosen or 'defaults'})")
+        results = {values[0]: reference}
+        for value in values[1:]:
+            if time.time() - started > CALIBRATION_BUDGET_SECONDS:
+                print("  ! budget exhausted, sweep stopped")
+                break
+            t = time.time()
+            results[value] = evaluate(f"{name}={value}", {**chosen, name: value},
+                                      with_baselines=False)
+            print(f"  {name}={value:<6} median R_mc {results[value]:.4f}   "
+                  f"{time.time() - t:.0f}s")
 
-    print(f"\nPHASE B - one parameter at a time, repair_p={best_p}")
-    for name, override in variants.items():
-        t = time.time()
-        params = {"repair_p": best_p, **override}
-        if not spend(phase_b, f"B {name}", params, with_baselines=(name == "default")):
-            break
-        print(f"  {name:<18} {time.time() - t:.0f}s")
+        best = max(results, key=lambda v: results[v])
+        gain = (results[best] - reference) / max(abs(reference), 1e-9)
+        if best != values[0] and gain > MIN_RELATIVE_GAIN:
+            chosen[name] = best
+            reference = results[best]
+            print(f"  -> adopt {name}={best} ({gain:+.1%}), carried forward\n")
+        else:
+            print(f"  -> keep {name}={values[0]} "
+                  f"(best alternative {gain:+.1%}, under the {MIN_RELATIVE_GAIN:.0%} "
+                  f"margin needed at one seed)\n")
 
     frame = write_rows(rows, "calibration.csv")
-    print(f"\ntotal {time.time() - started:.0f}s "
-          f"(budget {CALIBRATION_BUDGET_SECONDS}s)\n")
-    report(frame, best_p)
+    print(f"total {time.time() - started:.0f}s of {CALIBRATION_BUDGET_SECONDS}s\n")
 
+    print("=" * 70)
+    print("CALIBRATED DEFAULTS")
+    if chosen:
+        for name, value in chosen.items():
+            print(f"  {name}: change to {value}")
+        print("\n  Single seed, so confirm across seeds before editing config.py.")
+    else:
+        print("  No parameter cleared the margin - keep every current default.")
 
-def report(frame: pd.DataFrame, best_p: int) -> None:
-    """Median across cells, never mean: R and sigma are skewed and a few saturated hubs
-    with R near zero would drag a mean around (PILOT_TESTS.md §23/§37)."""
     alns = frame[frame.method == "alns"]
-
-    print("PHASE A - ALNS vs the best baseline on hub cells")
-    a = alns[alns.tag.str.startswith("A ")]
-    if not a.empty:
-        base = frame[(frame.tag.str.startswith("A ")) & (frame.method != "alns")]
-        for (source, k), cell in a.groupby(["source", "k"]):
-            best = base[(base.source == source) & (base.k == k)].R_mc.max()
-            line = "  ".join(f"{r.tag.split('=')[1]:>3}:{r.R_mc:.4f}"
-                             for _, r in cell.sort_values("tag").iterrows())
-            print(f"  source {source:>5} k={k:<3} best baseline {best:.4f}  |  ALNS {line}")
-
-    print("\nPHASE B - median R_mc across cells, one parameter at a time")
-    b = alns[alns.tag.str.startswith("B ")]
-    if b.empty:
-        return
-    stats = b.groupby("tag").agg(median_R_mc=("R_mc", "median"),
-                                 median_gap=("saa_mc_gap", "median"),
-                                 cells=("R_mc", "size"), seconds=("seconds", "sum"))
-    baseline = stats.loc["B default", "median_R_mc"] if "B default" in stats.index else None
-    print(f"  {'variant':<20} {'median R_mc':>12} {'vs default':>11} "
-          f"{'median SAA-MC':>14} {'cells':>6} {'sec':>7}")
-    for tag, r in stats.sort_values("median_R_mc", ascending=False).iterrows():
-        delta = "" if baseline is None else f"{(r.median_R_mc - baseline) / max(abs(baseline), 1e-9):+.1%}"
-        print(f"  {tag[2:]:<20} {r.median_R_mc:>12.4f} {delta:>11} "
-              f"{r.median_gap:>14.4f} {r.cells:>6.0f} {r.seconds:>7.0f}")
-
-    if baseline is not None:
-        winner = stats.median_R_mc.idxmax()
-        gain = (stats.median_R_mc.max() - baseline) / max(abs(baseline), 1e-9)
-        print(f"\n  decision rule (PILOT_TESTS.md §22): change a default only on a clear "
-              f"margin (> {MIN_RELATIVE_GAIN:.0%} at one seed).")
-        if gain > MIN_RELATIVE_GAIN and winner != "B default":
-            print(f"  -> {winner[2:]} wins by {gain:+.1%}. Confirm across seeds before adopting.")
-        else:
-            print(f"  -> best variant is {winner[2:]} at {gain:+.1%}: not a clear margin, "
-                  f"keep current defaults (max_iter={ALNS_MAX_ITER}, "
-                  f"q_max_frac={ALNS_Q_MAX_FRAC}, max_hop_scope={ALNS_MAX_HOP_SCOPE}, "
-                  f"repair_p={best_p}).")
+    print(f"\n  median SAA-MC gap {alns.saa_mc_gap.median():+.4f} "
+          f"(positive = the cut looked better in-sample than it was)")
+    return frame
 
 
 if __name__ == "__main__":

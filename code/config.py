@@ -1,7 +1,7 @@
 """Single source of truth for paths, seeds, and tunable constants.
 
 Nothing outside this file should hardcode a literal that could plausibly need to
-change or be looked up while reading results — see REPORT.md and PLAN.md for why.
+change or be looked up while reading results.
 This file grows as later modules need new constants; it is not meant to be
 complete up front.
 """
@@ -23,7 +23,7 @@ RAW_DATASET_COLUMNS = ["source", "target", "rating", "time"]
 
 # A (source, target) pair can be rated more than once over time. One edge,
 # one probability is required for SS-IMER, so duplicates must be resolved.
-# See REPORT.md §9a. "latest" keeps the row with the largest `time` value.
+# "latest" keeps the row with the largest `time` value.
 DUPLICATE_EDGE_POLICY = "latest"  # one of: "latest"
 
 # --- analyse_graph.py ----------------------------------------------------
@@ -31,9 +31,9 @@ DUPLICATE_EDGE_POLICY = "latest"  # one of: "latest"
 # igraph delegates its RNG to Python's `random` module by default, so seeding this
 # before a stochastic call (Erdos-Renyi null model, Louvain) makes it reproducible.
 ER_NULL_MODEL_SEED = 1
-LOUVAIN_RESTART_SEEDS = range(1, 21)  # best-of-20, PILOT_TESTS.md §36
+LOUVAIN_RESTART_SEEDS = range(1, 21)  # best-of-20
 
-# --- create_subgraphs.py (frozen live-edge scenarios, REPORT.md §7) ------
+# --- create_subgraphs.py (frozen live-edge scenarios) --------------------
 
 SAA_SCENARIO_COUNT = 500  # thesis Ch.4 "Fitness funkcija" text, already decided
 SAA_SCENARIO_SEED = 42
@@ -51,7 +51,7 @@ DESTROY_SHAW_P = 6
 # as-is only because every one of R&P's four terms has a counterpart in our formulation
 # (operators._relatedness documents the mapping term by term); when a term was missing
 # the weights had to be equal-and-meaningless instead. Still starting points to
-# recalibrate (PLAN.md Phase 2), but grounded ones.
+# recalibrate, but grounded ones.
 SHAW_PHI = 9    # location: are the two edges attached to the same tail / same head
 SHAW_CHI = 3    # time: how far into the cascade each endpoint is reached (BFS hop)
 SHAW_PSI = 2    # load: transmission probability carried by the edge
@@ -63,8 +63,8 @@ SHAW_OMEGA = 5  # servable set: overlap of the territory each edge feeds
 # identical. Measured: depth 2 gives mean |T| = 213 nodes.
 TERRITORY_DEPTH = 2
 
-# --- alns_optimizer.py: R&P (2006) tuned vector (§4.3.2), REPORT.md §6a — starting -
-# points to recalibrate on our own problem (PLAN.md Phase 2), not final values.     -
+# --- alns_optimizer.py: R&P (2006) tuned vector, section 4.3.2 — starting -------
+# points to recalibrate on our own problem, not final values.     -
 
 ALNS_SIGMA1 = 33  # new global best
 ALNS_SIGMA2 = 9   # better than current, unvisited
@@ -89,30 +89,30 @@ ALNS_SEGMENT_LENGTH = 20
 ALNS_FINAL_TEMP_FRACTION = 0.01
 
 # q bounds: R&P's literal formula (4 <= q <= min(100, xi*n), xi=0.4) breaks for our
-# much smaller k (REPORT.md §6a - a fixed floor of 4 can exceed k itself). Kept the
+# much smaller k. Kept the
 # pilot's k-proportional version instead - a justified departure, not an oversight.
 ALNS_Q_MIN_FRAC = 0.1
 ALNS_Q_MAX_FRAC = 0.4
 
 # Repair's rank-biased selection exponent has no R&P analog at all (their insertion
-# heuristics are deterministic - REPORT.md §7a explains why ours can't be). Entirely
+# heuristics are deterministic; ours cannot be, since our scores tie heavily). Entirely
 # our own choice, not sourced from the paper; starting near Shaw's p as a reasonable
 # "mostly greedy, still explores tied groups" default.
 ALNS_REPAIR_P = 6
 
-ALNS_RUN_SEED = 7  # per-run RNG seed; experiments vary this deliberately (REPORT.md §3)
+ALNS_RUN_SEED = 7  # per-run RNG seed; experiments vary this deliberately
 
 # Hop scope: repair draws from ONE hop layer per iteration, chosen by its own roulette
-# wheel alongside the destroy and repair wheels (REPORT.md §12). Layers start equally
+# wheel alongside the destroy and repair wheels. Layers start equally
 # weighted so ALNS *learns* which distance pays — that learning is the Level-2 claim,
 # so seeding it with a prior would be assuming the answer.
 #
-# Layers deeper than this are excluded outright: PILOT_TESTS.md §23 found no winning
+# Layers deeper than this are excluded outright: pilot runs found no winning
 # cut ever used hop>=4 (hop0 in 31/40 cases, then 9/6/4 at hops 1/2/3). Keeping them in
 # only spends iterations on candidates that never win. Revisit in calibration.
 ALNS_MAX_HOP_SCOPE = 3
 
-# --- source sampling (PLAN.md Phase 2, PILOT_TESTS.md §35 B7) -------------
+# --- source sampling -------------
 #
 # B7's rule, learned the hard way: ONE sample, ONE seed, calibration disjoint from
 # measurement. The pilot audit found three different source samples in circulation and
@@ -120,25 +120,25 @@ ALNS_MAX_HOP_SCOPE = 3
 
 SOURCE_SAMPLE_SEED = 20260904
 
-# A source needs out(s) > k or the instance is the trivial isolated case (REPORT.md §13),
+# A source needs out(s) > k or the instance is the trivial isolated case,
 # so out-degree < 4 cannot support the smallest budget we study. That excludes 2088 of
 # 3272 eligible nodes - a fact about the graph that belongs in the thesis, not a
 # convenience filter.
 SAMPLE_MIN_OUT_DEGREE = 4
 
-# Stratification axes, measured rather than assumed (data/source_profile.csv, REPORT.md
-# §18): reach is a smooth heavy-tailed continuum, not the bimodal split we expected, and
+# Stratification axes, measured rather than assumed (data/source_profile.csv):
+# reach is a smooth heavy-tailed continuum, not the bimodal split we expected, and
 # out-degree predicts it strongly but not deterministically - which is exactly why both
-# axes are needed. PILOT_TESTS.md §1: stratify on reach, never on centrality alone.
+# axes are needed. Stratify on reach, never on centrality alone.
 SAMPLE_OUT_DEGREE_BANDS = [(4, 10), (10, 20), (20, 50), (50, 10**9)]
 SAMPLE_SATURATED_SIGMA0 = 400.0  # above this a source reaches the giant live-edge component
 
 SAMPLE_CALIBRATION_PER_CELL = 2
 SAMPLE_MEASUREMENT_PER_CELL = 4
 
-# --- calibration (REPORT.md §10 - the process is itself thesis content) ---
+# --- calibration ---
 #
-# Hard wall-clock budget. Runtime scales with sigma_0 (REPORT.md §11), so a calibration
+# Hard wall-clock budget. Runtime scales with sigma_0, so a calibration
 # set's cost is decided by its reach composition, not its size: one saturated source costs
 # ~25 low-reach ones. The driver costs its plan against this before running anything.
 CALIBRATION_BUDGET_SECONDS = 1800

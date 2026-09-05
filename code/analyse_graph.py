@@ -1,11 +1,11 @@
 """Topology characterization (thesis Ch. 2) and precomputed heuristic feature tables.
 
-Two jobs, both write CSVs, nothing printed-only (PLAN.md Phase 1):
+Two jobs, both write CSVs, nothing printed-only:
 
 1. Topology numbers for the thesis: small-world/scale-free evidence vs. a directed ER
    null model, spectral epidemic threshold, bow-tie decomposition, k-core, Louvain
-   (descriptive only — REPORT.md §2), assortativity.
-2. Precomputed heuristic feature tables (REPORT.md §8): global, source-independent
+   (descriptive only), assortativity.
+2. Precomputed heuristic feature tables: global, source-independent
    features (degree-sum, Granovetter local bridge, spectral edge score) computed once
    for the whole graph; per-source features (hop-distance-from-source, source-rooted
    betweenness) computed once per source and reused across every k/method/ALNS
@@ -55,7 +55,7 @@ def small_world_stats(g: ig.Graph) -> dict:
 def degree_heterogeneity(g: ig.Graph) -> dict:
     """kappa = <k^2>/<k>^2 on degrees k>0, in- and out- separately.
 
-    PILOT_TESTS.md §13 flags kappa alone as NOT the epidemic threshold (that's
+    kappa alone is NOT the epidemic threshold (that's
     spectral_threshold above) - this is reported only as a heterogeneity descriptor.
     """
     out_deg = np.array(g.outdegree())
@@ -81,7 +81,7 @@ def probability_stats(g: ig.Graph) -> dict:
 def bow_tie_full(g: ig.Graph) -> dict:
     """Full bow-tie decomposition relative to the giant SCC: IN (reaches SCC, not
     reachable from it), OUT (reachable from SCC, can't reach back), rest (tendrils,
-    tubes, disconnected components - not split further, PLAN.md doesn't need that
+    tubes, disconnected components - not split further, the thesis doesn't need that
     granularity)."""
     n = g.vcount()
     scc = g.connected_components(mode="strong")
@@ -122,9 +122,9 @@ def top_betweenness_sources(g: ig.Graph, top_n: int = 3) -> list:
 
 def degree_power_law_fit(degrees: list, prefix: str) -> dict:
     """Clauset-Shalizi-Newman (2009) MLE fit + KS statistic, via the `powerlaw` package -
-    NOT just kappa = <k^2>/<k>^2 (PILOT_TESTS.md §36 flags kappa alone as insufficient).
+    NOT just kappa = <k^2>/<k>^2.
 
-    Fitting alone isn't proof of scale-free structure either (REPORT.md §5): also run
+    Fitting alone isn't proof of scale-free structure either: also run
     CSN's own recommended likelihood-ratio comparison against plausible alternative
     heavy-tailed distributions. R > 0 favors power law, R < 0 favors the alternative;
     p < 0.05 means the comparison itself is trustworthy (the sign of R is meaningful).
@@ -135,7 +135,7 @@ def degree_power_law_fit(degrees: list, prefix: str) -> dict:
         f"{prefix}_gamma": fit.power_law.alpha,
         f"{prefix}_xmin": fit.power_law.xmin,
         # fit.power_law.KS() is broken in powerlaw==2.0.0 (undefined free function
-        # called internally); .D holds the same statistic, computed during the fit.
+        # called internally);.D holds the same statistic, computed during the fit.
         f"{prefix}_ks": fit.power_law.D,
     }
     for alt in ["lognormal", "exponential", "truncated_power_law", "stretched_exponential"]:
@@ -148,7 +148,7 @@ def degree_power_law_fit(degrees: list, prefix: str) -> dict:
 def spectral_threshold(g: ig.Graph) -> dict:
     """lambda_c = 1 / lambda_max(A) - Wang et al. 2003; Castellano & Pastor-Satorras 2010.
 
-    Also reports lambda_max(P) (probability-weighted adjacency) per PILOT_TESTS.md §20 -
+    Also reports lambda_max(P) (probability-weighted adjacency) -
     NOT used interchangeably with lambda_max(A); the structural threshold is unweighted.
     """
     A = g.get_adjacency_sparse().asfptype()
@@ -176,7 +176,7 @@ def k_core_stats(g: ig.Graph) -> dict:
 
 
 def louvain_best_of_n(g: ig.Graph, seeds=LOUVAIN_RESTART_SEEDS) -> dict:
-    """Best-of-N Louvain restarts (PILOT_TESTS.md §36) - Louvain is seed-sensitive.
+    """Best-of-N Louvain restarts - Louvain is seed-sensitive.
 
     igraph delegates its RNG to Python's `random` module by default, so `random.seed`
     controls reproducibility here (verified against known pilot numbers).
@@ -205,19 +205,19 @@ def assortativity(g: ig.Graph) -> dict:
 
 
 # --------------------------------------------------------------------------
-# 2a. Global, source-independent heuristic features (REPORT.md §8)
+# 2a. Global, source-independent heuristic features
 # --------------------------------------------------------------------------
 
 
 def degree_sum_scores(g: ig.Graph) -> dict:
-    """out(u) + out(v) on the base graph, per edge - REPORT.md §2."""
+    """out(u) + out(v) on the base graph, per edge."""
     out_deg = g.outdegree()
     return {e.index: out_deg[e.source] + out_deg[e.target] for e in g.es}
 
 
 def granovetter_local_bridge_flags(g: ig.Graph) -> dict:
     """Edge is a local bridge if its endpoints share no common neighbor (Granovetter 1973,
-    standard "no common friend" definition - REPORT.md §2)."""
+    standard "no common friend" definition)."""
     gu = g.as_undirected(mode="collapse")
     neighbor_sets = [set(gu.neighbors(v)) for v in range(gu.vcount())]
     return {
@@ -230,8 +230,8 @@ def spectral_edge_scores(g: ig.Graph) -> dict:
 
     u = leading LEFT eigenvector of A (A^T's leading right eigenvector), v = leading
     RIGHT eigenvector of A, both sign-corrected via Perron-Frobenius. Verbatim from the
-    paper - see REPORT.md §6a. Uses igraph's own get_adjacency_sparse so vertex order is
-    guaranteed aligned to g.vs index (REPORT.md §8a) - never a separately rebuilt array.
+    paper - Uses igraph's own get_adjacency_sparse so vertex order is
+    guaranteed aligned to g.vs index - never a separately rebuilt array.
     """
     A = g.get_adjacency_sparse().asfptype()
     _, vecs_r = spla.eigs(A, k=1, which="LR")
@@ -260,7 +260,7 @@ def node_territories(g: ig.Graph, depth: int = TERRITORY_DEPTH) -> list:
     the full descendant set of a node in an 86.7%-SCC graph is nearly the whole graph
     for almost every node, which would make every pair look identical.
 
-    Source-independent, so it is a global feature in REPORT.md §8's sense; kept as an
+    Source-independent, so it is a global feature; kept as an
     in-memory list rather than a CSV column because it is per *node* and set-valued.
     """
     one_hop = [frozenset(g.neighbors(v, mode="out")) for v in range(g.vcount())]
@@ -278,12 +278,12 @@ def node_territories(g: ig.Graph, depth: int = TERRITORY_DEPTH) -> list:
 def source_features(g: ig.Graph, source: int) -> dict:
     """Single BFS from `source` gives hop-distance for free; a reverse accumulation pass
     over the same BFS gives source-rooted edge betweenness (Brandes 2001, restricted to
-    one start node - "Brandesov score na najkraćim putevima koji pocinju u izvoru",
-    REPORT.md §2). Both are per-source static facts: compute once, reuse across every
+    one start node - "Brandesov score na najkraćim putevima koji pocinju u izvoru").
+    Both are per-source static facts: compute once, reuse across every
     k/method/ALNS iteration for that source - never recompute inside the ALNS loop.
 
     Returns hop_of_node, betweenness (per edge id), and edges_by_hop (candidate pool
-    buckets, REPORT.md §7): edge (u,v) belongs to layer hop_of_node[u]. hop_of_node is
+    buckets): edge (u,v) belongs to layer hop_of_node[u]. hop_of_node is
     computed on the base graph, not recomputed as the cut changes.
     """
     n = g.vcount()

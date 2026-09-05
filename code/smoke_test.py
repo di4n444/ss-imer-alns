@@ -1,4 +1,4 @@
-"""Phase 1 smoke test (PLAN.md): run the whole pipeline end to end on one real
+"""Phase 1 smoke test: run the whole pipeline end to end on one real
 (source, k) and check the wiring, not the science. Reports timings so the runtime
 budget stays visible — the target is one (source, k, seed) run in well under a minute.
 """

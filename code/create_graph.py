@@ -2,10 +2,8 @@
 
 Positive ratings only; each rating is mapped to an Independent Cascade
 transmission probability via a sigmoid, p = 1 / (1 + exp(-(rating - 5))).
-See PILOT_TESTS.md §12 and REPORT.md §1 for why this formula and this filter.
 
-Vertex indexing: igraph.Graph.TupleList is intentionally not used (see
-REPORT.md §8a) because it orders vertices by first-appearance in the edge
+Vertex indexing: igraph.Graph.TupleList is intentionally not used because it orders vertices by first-appearance in the edge
 list, decoupled from any array built elsewhere. Instead vertices are added
 in a single, explicit, sorted order, and every downstream consumer of a
 numeric array (e.g. eigenvector components for the spectral heuristic) must
@@ -22,7 +20,7 @@ from config import DUPLICATE_EDGE_POLICY, RAW_DATASET_COLUMNS, RAW_DATASET_PATH
 
 
 def rating_to_probability(rating: float) -> float:
-    """IC transmission probability from a Bitcoin Alpha rating (PILOT_TESTS.md §12)."""
+    """IC transmission probability from a Bitcoin Alpha rating."""
     return 1.0 / (1.0 + math.exp(-(rating - 5.0)))
 
 
@@ -35,14 +33,14 @@ def load_ratings(path=RAW_DATASET_PATH) -> pd.DataFrame:
         raise NotImplementedError(f"unknown DUPLICATE_EDGE_POLICY: {DUPLICATE_EDGE_POLICY!r}")
     df = (
         df.sort_values("time")
-        .drop_duplicates(subset=["source", "target"], keep="last")
-        .reset_index(drop=True)
+.drop_duplicates(subset=["source", "target"], keep="last")
+.reset_index(drop=True)
     )
     return df
 
 
 def verify_vertex_alignment(g: ig.Graph, node_ids: list) -> None:
-    """Structural guard against the index-misalignment bug class (REPORT.md §4/§8a).
+    """Structural guard against the index-misalignment bug class.
 
     Called every time the graph is constructed, not just once during testing.
     """

@@ -1,6 +1,6 @@
 """Draw the one source sample -> data/sample.csv.
 
-PILOT_TESTS.md §35 B7 is the rule this file exists to enforce: **one sample, one seed,
+The rule this file exists to enforce: **one sample, one seed,
 calibration disjoint from measurement**. The pilot audit found three different samples in
 circulation and could no longer say which reported number came from which. So there is
 exactly one function here, it is seeded from config, and it writes one file.
@@ -8,22 +8,22 @@ exactly one function here, it is seeded from config, and it writes one file.
 Stratification is on (out-degree band x reach class), both measured from
 data/source_profile.csv rather than assumed:
 
-  - PILOT_TESTS.md §1 requires reach as a stratifying variable, because topologically
+  - Reach is required as a stratifying variable, because topologically
     distinct nodes turned out to have identical cascade reach - they land in the same
     live-edge SCC. Centrality alone is not a proxy for it.
   - Out-degree is kept as the second axis because it *is* the hop0 candidate pool, so it
-    decides both what k can be studied and how hard the search is (REPORT.md §14.2), and
+    decides both what k can be studied and how hard the search is, and
     because it predicts reach strongly but not deterministically: 5% of out<4 sources are
     saturated, against 99% of out>=50 ones. The off-diagonal cells - few edges out of s,
     but they reach the giant component - are exactly the redundant-fan-out geometry the
-    Level-2 question is about (REPORT.md §8c).
+    Level-2 question is about.
 
 Sources with out-degree < 4 are excluded: k >= out(s) is the trivial isolated case
-(REPORT.md §13), so they cannot support even the smallest budget studied. That is 2088 of
+, so they cannot support even the smallest budget studied. That is 2088 of
 3272 eligible nodes, which is a finding to report rather than a filter to hide.
 
 `predicted_seconds` is carried per source so an experiment plan can be costed *before* it
-is run - runtime tracks sigma_0, not source count (REPORT.md §11), so a set's cost is
+is run - runtime tracks sigma_0, not source count, so a set's cost is
 decided by its reach composition.
 """
 
@@ -43,7 +43,7 @@ from config import (
 
 
 def predicted_seconds(sigma0: float, iterations: int = 300) -> float:
-    """Estimated ALNS runtime. Linear in sigma_0 (REPORT.md §11's cost model) and in the
+    """Estimated ALNS runtime. Linear in sigma_0 and in the
     iteration budget. Used only for planning; drivers measure the real thing."""
     per_300 = max(1.0, CALIBRATION_COST_PER_SIGMA0 * sigma0 + CALIBRATION_COST_INTERCEPT)
     return per_300 * iterations / 300

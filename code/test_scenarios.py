@@ -1,12 +1,12 @@
 """Regression tests for the frozen live-edge scenario sets.
 
-PLAN.md Phase 1 lists these as smoke tests that must pass before Phase 2, and REPORT.md §7
-states the property they defend: the SAA and MC sets are generated once and are immutable
+Smoke tests that must pass before any measurement run. The property they defend: the
+SAA and MC sets are generated once and are immutable
 afterwards, so evaluation always works on a mask, never on the scenario objects.
 
 Both failure modes are silent. If generation is not reproducible from its seed, no run can
-be compared with any other run — PILOT_TESTS.md §8 ("ne uspoređivati runove na različitim
-in-sample scenarijima") and §24 ("promjena SAA/MC seeda invalidira sve σ"). If any code
+be compared with any other run: "ne uspoređivati runove na različitim in-sample
+scenarijima", and changing a scenario seed invalidates every sigma. If any code
 path mutates a scenario, every sigma after that point is wrong and nothing raises. Neither
 would be caught by the objective tests in test_evaluator.py, which check a single
 evaluation against an oracle rather than the state shared across thousands of them.
@@ -55,7 +55,7 @@ def test_generation_is_reproducible_from_its_seed(g, scenarios, ctx, evaluator):
 
 def test_saa_and_mc_are_independent_draws(g, scenarios, ctx, evaluator):
     """The out-of-sample set has to be genuinely out of sample. A shared seed would make
-    OOS validation measure nothing while looking like it passed (REPORT.md §7)."""
+    OOS validation measure nothing while looking like it passed."""
     assert SAA_SCENARIO_SEED != MC_SCENARIO_SEED, "SAA and MC share a seed"
     mc_head = create_subgraphs.generate_scenarios(g, 20, MC_SCENARIO_SEED)
     overlap = set(_fingerprint(mc_head)) & set(_fingerprint(scenarios))

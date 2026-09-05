@@ -1,10 +1,10 @@
 """Frozen live-edge (bond percolation) scenario sets: SAA in-sample + Monte Carlo
-out-of-sample. Generated once per graph, immutable afterwards (REPORT.md §7).
+out-of-sample. Generated once per graph, immutable afterwards.
 
 Each scenario is a plain Python adjacency list, `list[list[int]]` indexed by node id,
 giving only the *targets* reachable via an occupied edge — the coin-flip occupancy
 decision is baked in once at generation time, not re-checked per BFS step. This
-mirrors PILOT_TESTS.md §24's own measured lesson (~2.3x over a numpy-mask version):
+mirrors a measured lesson (~2.3x over a numpy-mask version):
 numpy array indexing inside a tight Python BFS loop is slower than plain Python
 lists/sets due to per-element boxing. Vectorized numpy is still used for the actual
 random draws (that part benefits from it); only the structure consumed by the BFS

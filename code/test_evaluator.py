@@ -43,7 +43,7 @@ def test_matches_igraph_reachability(g, source, scenarios, ctx, cut):
     for index, adj in enumerate(scenarios[:ORACLE_SCENARIOS]):
         edges = [(u, v) for u in range(len(adj)) for v in adj[u] if (u, v) not in cut_pairs]
         oracle = len(ig.Graph(n=g.vcount(), edges=edges, directed=True)
-                     .subcomponent(source, mode="out"))
+.subcomponent(source, mode="out"))
         ours = Evaluator(g.vcount(), [adj], use_cache=False).evaluate_reach(
             source, cut, ctx.endpoints)
         assert ours == oracle, f"scenario {index}: ours={ours} igraph={oracle}"
@@ -114,7 +114,7 @@ def test_cache_does_not_confuse_sources(g, source, scenarios, ctx, cut):
 
 
 def test_scenario_sampler_matches_declared_probabilities(g, source, scenarios, ctx, cut):
-    """PILOT_TESTS.md §36: check the realised edge-occupancy frequency across scenarios
+    """Check the realised edge-occupancy frequency across scenarios
     against each edge's declared probability. If the sampler drifts, every sigma in the
     thesis is wrong and nothing else would notice — this is the cheapest possible guard
     against that."""

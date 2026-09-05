@@ -1,6 +1,6 @@
 """Orchestration: one CSV row per (source, k, method) run.
 
-The schema rule comes straight from PILOT_TESTS.md §28, which is a bug this project has
+The schema rule comes from a bug this project has
 already paid for once: `best_peer_mc = min([alns_mc, *baselines])` put ALNS into the pool
 it was being judged against, so the column could never show ALNS losing — it read equal to
 ALNS on 25 of 40 rows while ALNS was strictly best on only 11. So: **one row per method,
@@ -8,12 +8,11 @@ never a column that pools a method with its own competitors.** "Best fixed basel
 "oracle" are `groupby` operations performed after measurement, not columns written during
 it.
 
-Each row also carries every resolved ALNS parameter (PILOT_TESTS.md §37: "svi razriješeni
-ALNS parametri u istom redu"), so a calibration variant is identifiable from the row alone
+Each row also carries every resolved ALNS parameter, so a calibration variant is identifiable from the row alone
 and can never be mistaken for a default run.
 
 Both sigmas are always recorded. SAA is what the search optimised; MC is what gets
-reported. PILOT_TESTS.md §34 measured them disagreeing — a cut that wins in-sample and
+reported. They have been measured disagreeing — a cut that wins in-sample and
 loses out-of-sample — so writing only one of them would hide the overfitting rather than
 measure it.
 """
@@ -49,7 +48,7 @@ def _row(result, ctx, k, sigma0_saa, sigma0_mc, elapsed, tag) -> dict:
         "R_saa": 1 - saa / sigma0_saa,
         "R_mc": 1 - mc / sigma0_mc,
         # SAA minus MC on the same cut: positive means the cut looked better in-sample
-        # than it turned out to be, which is the overfitting PILOT_TESTS.md §34 warns of.
+        # than it turned out to be: overfitting to the in-sample scenarios.
         "saa_mc_gap": (1 - saa / sigma0_saa) - (1 - mc / sigma0_mc),
         "cut_size": len(result["best_cut"]),
         "hop_mix": repr(dict(sorted(result["hop_mix"].items()))),
@@ -77,7 +76,7 @@ def run_cell(ctx, k: int, ev_saa, ev_mc, *, seeds=(7,), alns_params=None,
     expensive part, not evaluating against them.
 
     Deterministic baselines are computed once regardless of how many ALNS seeds are run
-    (PILOT_TESTS.md §19); only `random` and ALNS vary with the seed.
+; only `random` and ALNS vary with the seed.
     """
     endpoints = ctx.endpoints
     sigma0_saa = ev_saa.evaluate_reach(ctx.source, frozenset(), endpoints)
@@ -87,7 +86,7 @@ def run_cell(ctx, k: int, ev_saa, ev_mc, *, seeds=(7,), alns_params=None,
     if baselines:
         for name in HEURISTICS:
             # `random` is the one baseline whose result depends on the seed, so it is the
-            # only one run per seed (PILOT_TESTS.md §31).
+            # only one run per seed.
             for seed in (seeds if name == "random" else seeds[:1]):
                 started = time.time()
                 result = run_greedy(ctx, name, k, ev_saa, seed=seed)
@@ -129,7 +128,7 @@ class Workbench:
 
     def evaluators(self, source: int):
         """One SAA and one MC evaluator per source. Separate objects by construction, so
-        the search can never be handed the out-of-sample set (REPORT.md §1/§7)."""
+        the search can never be handed the out-of-sample set."""
         if source not in self._evaluators:
             self._evaluators[source] = (Evaluator(self.g.vcount(), self.saa),
                                         Evaluator(self.g.vcount(), self.mc))
@@ -144,7 +143,7 @@ def write_rows(rows: list, filename: str) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    # Schema check (PLAN.md Phase 1's last open smoke test): one source/k, every method,
+    # Schema check: one source/k, every method,
     # confirming the row schema is complete and stable before any real sweep uses it.
     bench = Workbench()
     sample = pd.read_csv(DATA_DIR / "sample.csv")

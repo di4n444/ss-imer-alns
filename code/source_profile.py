@@ -1,22 +1,21 @@
 """Per-source profile for the whole graph -> data/source_profile.csv.
 
-PLAN.md Phase 2's first task is "decide source sample: stratify by reach level and/or
-out-degree band", and PILOT_TESTS.md §1 is emphatic that the stratifying variable must be
-*reach*, not centrality: topologically distinct nodes turned out to have identical cascade
+The source sample is stratified by reach level and out-degree band, and the stratifying
+variable must be *reach*, not centrality: topologically distinct nodes turned out to have identical cascade
 reach to the decimal, because they land in the same live-edge SCC. So the sample cannot be
 drawn until reach has actually been measured, and this measures it for every source rather
 than for a probe, so the sample is drawn from the real distribution and the same table can
-later justify each curated showcase pick (REPORT.md §9).
+later justify each curated showcase pick.
 
 Also recorded because they cost nothing on top of the same pass and each answers a
 question the sample design has to face:
   - `out_degree`, the hop0 candidate-pool size, which is the second stratifying axis and
-    also bounds k (k >= out_degree is the trivial isolated case, REPORT.md §13);
+    also bounds k (k >= out_degree is the trivial isolated case);
   - `reachable`, the deterministic descendant count on the base graph, i.e. the ceiling
     sigma_0 could ever approach, which separates "small because it is cut off" from
     "small because its edges are weak";
   - `sigma0_saa`, the in-sample reach with nothing cut - the denominator of R = 1 -
-    sigma/sigma_0, every run's baseline, and (REPORT.md §11) the thing ALNS runtime
+    sigma/sigma_0, every run's baseline, and the thing ALNS runtime
     actually scales with, so it doubles as the cost model for the experiment matrix.
 
 Deliberately *not* here: any ALNS or baseline result. This is a property of the graph, so
@@ -77,7 +76,7 @@ if __name__ == "__main__":
     for q in range(0, 11):
         print(f"  {q * 10:>7}% {eligible.sigma0_saa.quantile(q / 10):>10.2f}")
 
-    print("\nsigma0 by band (is reach bimodal, as PILOT_TESTS.md §20 suggests?):")
+    print("\nsigma0 by band (is reach bimodal?):")
     bands = [(1, 2), (2, 10), (10, 100), (100, 400), (400, 600), (600, 1e9)]
     for lo, hi in bands:
         n = ((eligible.sigma0_saa >= lo) & (eligible.sigma0_saa < hi)).sum()

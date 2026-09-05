@@ -1,23 +1,23 @@
 """ALNS main loop: roulette-wheel operator selection, R&P's (2006) adaptive weight
 update, simulated-annealing acceptance, and the hop-scope mechanism.
 
-Faithful to R&P for everything they specify (REPORT.md §6a): independent roulette
+Faithful to R&P for everything they specify: independent roulette
 wheels per operator family (eq. 20), the sigma1/sigma2/sigma3 score system with its
 "only reward unvisited solutions" rule, the segment-end weight update
 w' = w(1-r) + r*(score/count), and SA acceptance with a start temperature calibrated
 from the initial solution.
 
-Three deliberate departures, all documented in REPORT.md §6a and §12:
+Three deliberate departures:
   - the cooling rate is derived from *our* iteration budget rather than copying R&P's
     c=0.99975, which only makes sense against their 25000-iteration runs;
   - the hop scope is our own addition — R&P have no notion of a restricted candidate
     neighbourhood — implemented as a *third weight book* over hop layers rather than an
     expanding horizon, because the horizon version was measured to wreck the search
-    (REPORT.md §12). It is scored by R&P's own attribution rule (§3.4: every mechanism
+. It is scored by R&P's own attribution rule (§3.4: every mechanism
     involved in a success gets the same increment, because you cannot tell which one
     caused it), applied to the layers that actually supplied the new edges;
   - Delta = 0 is accepted but scores nothing, which is what a strict reading of R&P's
-    three sigma cases already implies (PILOT_TESTS.md §18's bug, fixed by construction).
+    three sigma cases already implies.
 """
 
 import math
@@ -76,16 +76,16 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None,
     """One ALNS search for a fixed (source, k).
 
     `ctx` is the SourceContext holding every precomputed per-source table; `evaluator`
-    must be bound to the SAA scenario set, never the out-of-sample one (REPORT.md §7).
+    must be bound to the SAA scenario set, never the out-of-sample one.
 
     `fixed_hop_scope` pins repair to a single hop layer instead of letting the scope
     wheel choose. Kept as a diagnostic knob; not part of the experiment matrix
-    (REPORT.md §16).
+.
 
     Every tunable parameter is a keyword argument defaulting to its config value, so a
     calibration variant is an *override* rather than a separate code path, and the
     resolved values come back in the result under `params` to be written into the same
-    CSV row as the numbers they produced (PILOT_TESTS.md §37). Nothing may reach into
+    CSV row as the numbers they produced. Nothing may reach into
     config to change behaviour behind the caller's back.
     """
     rng = random.Random(seed)
@@ -106,12 +106,12 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None,
     fallback_edges = [eid for h in scopes for eid in layer_edges[h]]
 
     # Warm start: k random hop0 edges. Deliberately not heuristic-chosen — that would
-    # hand the matching repair operator a built-in head start (PILOT_TESTS.md §32).
+    # hand the matching repair operator a built-in head start.
     #
     # k >= out_degree is not an error, just the trivial case: the budget can cut every
     # edge leaving the source, so the warm start does exactly that, isolating it. Any
     # remaining budget is topped up from the other layers to keep |D| = k, though those
-    # edges are unreachable once the source is isolated (PILOT_TESTS.md §10).
+    # edges are unreachable once the source is isolated.
     #
     # A source with out-degree 0 (411 of Bitcoin Alpha's 3683 nodes) has no hop0 layer at
     # all: sigma = 1 with an empty cut, so it is the isolated case too, handled rather
@@ -147,14 +147,13 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None,
 
     # At k=1 these collapse to q = 1 = |D|: destroy empties the cut and repair rebuilds it
     # from nothing, so the search degenerates to a memoryless random restart with no
-    # neighbourhood structure at all. k=2 and k=3 give q=1, a 1-swap (PILOT_TESTS.md §22
-    # already noted this). Both are correct, but neither is "adaptive" in any strong
+    # neighbourhood structure at all. k=2 and k=3 give q=1, a 1-swap. Both are correct, but neither is "adaptive" in any strong
     # sense, so results at those budgets must be read with that in mind — hence q_min/q_max
-    # are returned with the run rather than left implicit (PILOT_TESTS.md §37).
+    # are returned with the run rather than left implicit.
     q_min = max(1, math.floor(q_min_frac * k))
     q_max = max(q_min, min(k - 1, math.floor(q_max_frac * k)))
 
-    # sigma1 attribution. PILOT_TESTS.md §23 is explicit that final weights alone do NOT
+    # sigma1 attribution. Final weights alone do NOT
     # license the claim "ALNS learns which criterion to use" — that needs per-heuristic
     # counts of who actually produced a new global best. Same for the scope wheel, which
     # is the Level-2 claim's evidence.
@@ -162,7 +161,7 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None,
     # `best_hits_by_scope` stays a *selection* statistic (which layer the wheel picked
     # when a new best landed); `best_hits_by_hop` is the *origin* statistic (which layer
     # the winning edges came from). They coincide whenever repair is served entirely by
-    # the chosen layer, and PILOT_TESTS.md §23 is explicit that the two questions must
+    # the chosen layer, and the two questions must
     # not be conflated, so both are kept. `scope_selected` is the denominator for
     # reading either against how often the wheel actually chose that layer.
     best_hits_by_scope = _zeroed(scopes)
@@ -198,7 +197,7 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None,
 
         # Repair draws from the chosen layer first; if that layer cannot supply enough
         # (small hop0, or most of it already cut) the remainder comes from the other
-        # in-scope layers, so |D| = k always holds (PILOT_TESTS.md §10's fill rule).
+        # in-scope layers, so |D| = k always holds.
         added = repair(repair_name, [e for e in layer_edges[scope] if e not in partial],
                         wanted, ctx, rng, repair_p)
         if len(added) < wanted:
@@ -207,7 +206,7 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None,
             fallback_used[scope] += 1
         candidate = partial | added
 
-        # PILOT_TESTS.md B2: a short repair is a bug to surface, never a silent skip.
+        # A short repair is a bug to surface, never a silent skip.
         # |current| is invariably k inside this loop (the k >= |hop0| branch is isolated
         # and never enters it), so this is the full guard, not a weakened one.
         assert len(candidate) == k, (
@@ -285,7 +284,7 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None,
             scope_scores, scope_counts = _zeroed(scopes), _zeroed(scopes)
 
     # hop composition OF THE CUT, kept separate from the search-side hop statistics
-    # above: PILOT_TESTS.md §23 warns explicitly not to conflate "which layer the search
+    # above: do not conflate "which layer the search
     # visited" with "which layer the winning edges came from".
     # Every candidate edge comes from `edges_by_hop`, whose domain is exactly
     # `hop_of_edge`'s, so a direct lookup is correct and a KeyError here would be a real
@@ -316,7 +315,7 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None,
         "trace": trace,
         # Every resolved parameter travels with the numbers it produced, so a CSV row is
         # self-describing and a variant can never be confused with a default
-        # (PILOT_TESTS.md §37).
+        #.
         "params": {
             "max_iter": max_iter,
             "segment_length": segment_length,

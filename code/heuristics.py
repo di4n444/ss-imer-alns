@@ -2,9 +2,9 @@
 shared by greedy baselines and ALNS operators.
 
 Scores are O(1) dict lookups into `SourceContext`'s precomputed tables — no graph
-traversal and no pandas indexing in the hot path (REPORT.md §8).
+traversal and no pandas indexing in the hot path.
 
-Selection has exactly two modes, and they must never drift apart (REPORT.md §3/§7a):
+Selection has exactly two modes, and they must never drift apart:
   - baselines are a deterministic *rule*   -> `topk(..., rng=None)`
   - ALNS operators are a *sampler*         -> `select_q(..., rng=<seeded Random>)`
 The sampler is R&P (2006) Algorithm 2/3's y^p rank-biased draw, on a ranking whose
@@ -42,7 +42,7 @@ def edge_scores(heuristic: str, ctx, edge_ids, rng: random.Random = None) -> dic
     if heuristic == "random":
         # No fall back to the global `random` module: every stochastic step must come
         # from the run's own seeded Random so runs stay independently reproducible
-        # (PILOT_TESTS.md §35 R13).
+        #.
         if rng is None:
             raise ValueError("the 'random' heuristic needs the run's seeded rng")
         return {eid: rng.random() for eid in edge_ids}
@@ -96,7 +96,7 @@ def topk(edge_ids, scores: dict, endpoints: dict, k: int, rng: random.Random = N
 
 
 def tie_group_sizes(edge_ids, scores: dict) -> list:
-    """Diagnostic for REPORT.md §3's tie-frequency reporting requirement: sizes of
+    """Diagnostic for tie-frequency reporting: sizes of
     groups sharing an identical score, largest first. Called from measurement code,
     never from the hot path."""
     from collections import Counter

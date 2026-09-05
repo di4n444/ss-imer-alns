@@ -9,7 +9,7 @@ All lookups are plain dicts, deliberately: the previous version scored candidate
 straight off a pandas DataFrame with `.loc[eid]` per edge, which costs microseconds
 *per element* and runs on pools of hundreds of edges every iteration. Flattening the
 feature table into dicts once per source turns that into an O(1) hash lookup
-(REPORT.md §8 — precompute once, never recompute in the loop).
+.
 """
 
 from dataclasses import dataclass
@@ -44,7 +44,7 @@ def verify_feature_alignment(g, features) -> None:
 
     Vectorised deliberately: the obvious `features.loc[e.index]` per edge measured 2.3 s
     per source and was ~90% of the cost of building a SourceContext — the exact
-    pandas-indexing-in-a-loop pattern REPORT.md §8 forbids in the hot path, which had no
+    pandas-indexing-in-a-loop pattern banned from the hot path, which had no
     business being here either."""
     if len(features) != g.ecount():
         raise AssertionError(
@@ -81,7 +81,7 @@ def build_source_context(g, source: int, features) -> SourceContext:
     edge_features.csv, whose `source`/`target` columns hold original SNAP user IDs for
     human-readable reporting. Scenarios, `hop_of_node` and the evaluator's stamp array
     are all indexed by internal vertex index, so mixing the two namespaces is exactly
-    the index-misalignment bug class REPORT.md §4/§8a exists to prevent. Alignment on
+    the index-misalignment bug class the structural guards exist to prevent. Alignment on
     `edge_id` is safe: the CSV is written from `e.index` in analyse_graph.py.
     """
     verify_feature_alignment(g, features)

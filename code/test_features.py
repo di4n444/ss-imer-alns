@@ -1,6 +1,6 @@
 """Regression tests for the spectral heuristic's index alignment.
 
-PLAN.md Phase 1 lists this as a smoke test that must pass before Phase 2. It gets its own
+A smoke test that must pass before any measurement run. It gets its own
 file because the failure mode is uniquely nasty: the spectral score is the one feature
 computed from a matrix rather than read off the graph, so a vertex-ordering mistake
 produces plausible-looking numbers that are simply attached to the wrong edges. PILOT
@@ -96,7 +96,7 @@ def test_score_predicts_the_eigenvalue_drop(g, scores):
     rho = spearmanr([scores[eid] for eid in sample], drops).statistic
     assert rho > 0.9, (
         f"Spearman(spectral score, measured drop in lambda_max) = {rho:.3f}; "
-        f"PILOT_TESTS.md §18 saw 0.15 when the eigenvector was indexed by name order "
+        f"a misaligned run saw 0.15 when the eigenvector was indexed by name order "
         f"and 0.969 once aligned. Anything low here means the score is on the wrong edges."
     )
     print(f"  predicts the lambda_max drop it claims to: Spearman {rho:.3f} "

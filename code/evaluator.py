@@ -2,7 +2,7 @@
 
 Does not generate scenarios (create_subgraphs.py). One `Evaluator` is bound to exactly
 one scenario set for its whole life — that object *is* the SAA/OOS boundary
-(REPORT.md §1/§7): the ALNS loop only ever holds an SAA-bound evaluator, final
+: the ALNS loop only ever holds an SAA-bound evaluator, final
 validation only ever an MC-bound one, so the search objective can never accidentally
 be computed against out-of-sample data.
 
@@ -14,7 +14,7 @@ implementation choices are deliberate, each measured or inherited from a prior l
    probes per run), and a list index skips the hashing a dict lookup pays.
 2. Visited-marking uses a reusable stamp array rather than a fresh `set()` per
    traversal: no per-call allocation, no hashing, and no O(N) reset — just bump an
-   integer (PILOT_TESTS.md §24).
+   integer.
 3. `edge_id` never appears in the traversal at all. Bitcoin Alpha has no multi-edges
    (deduplicated at load, config.DUPLICATE_EDGE_POLICY), so (tail, head) identifies an
    edge and only the k-element cut needs translating per call.
@@ -125,9 +125,8 @@ class Evaluator:
         # Keyed by (source, cut), never the cut alone: reach is a property of both, and
         # one evaluator is deliberately reusable across sources (the scenario set is the
         # expensive thing to build). Keying on D alone silently returned the previous
-        # source's answer - measured at sigma=41.10 for a source whose true sigma is
-        # 643.63. Nothing crashes; the number is just wrong. Same bug class as
-        # PILOT_TESTS.md §35 D5, one level down.
+        # source's answer - sigma=41.10 for a source whose true sigma is 643.63, with
+        # nothing raised.
         key = (source, D)
         if cache is not None:
             hit = cache.get(key)
