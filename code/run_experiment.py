@@ -58,9 +58,13 @@ def _row(result, ctx, k, sigma0_saa, sigma0_mc, elapsed, tag) -> dict:
     for key in ("iterations_done", "evaluations", "scope_weights", "repair_weights",
                 "destroy_weights", "best_hits_by_heuristic", "best_hits_by_hop",
                 "best_hits_by_scope", "scope_selected", "neutral_moves", "fallback_used",
-                "layer_sizes", "q_bounds"):
+                "layer_sizes", "q_bounds",
+                # baseline-side diagnostics: how large the tied group at the cutoff was,
+                # and how it split, which is where the tie-break rule rather than the
+                # criterion decided the cut
+                "candidates", "tie_split_at_cutoff", "tie_group_sizes"):
         if key in result:
-            row[key] = repr(result[key]) if isinstance(result[key], (dict, tuple)) \
+            row[key] = repr(result[key]) if isinstance(result[key], (dict, tuple, list)) \
                 else result[key]
     row.update({f"param_{name}": value
                 for name, value in result.get("params", {}).items()})
