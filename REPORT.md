@@ -345,6 +345,14 @@ are deliberately not copied here.
 `max_iter = min(100k, 2000)`. Keep it separate when computing anything about method
 performance.
 
+**Runtime lives in the `seconds` column, one value per row; no aggregate is stored
+anywhere.** Any total — "the baselines cost about 1% of an ALNS run", the compute spent on
+a sweep — is a `groupby` over that column at the time of writing, not a number to be quoted
+from this file. One caveat when you do it: `_row` rounds to two decimals, so a greedy run
+faster than 10 ms is recorded as 0.00. Around a hundred baseline rows are, which makes
+per-row baseline timings useless but leaves the sum accurate to well under a second, since
+each missing value is below 0.005 s. Use the sum, never the individual rows.
+
 **Rows to exclude from any method comparison**: the `probe*` tags and everything in
 `results_scaled.csv`. They hold ALNS at a different iteration budget with no matching
 baselines, so pooling them with the main run compares ALNS at one setting against baselines
@@ -381,6 +389,49 @@ report a subset as though it estimated the whole.
 **Trivial and near-trivial cells.** `stop_reason == "isolated"` marks instances solved in
 closed form. Cells where several methods all reach R ≈ 0.97 are not marked but flatter
 every method equally, so state whether they are included in any average.
+
+### How to group the 150 runs — and what not to average
+
+There are 150 cell-runs across two files, and they answer **four different questions**. An
+average over all of them answers none of the four. Group first, then average inside a
+group, and say which question each table is answering.
+
+**1. Does adaptive search beat a fixed criterion?** Use `results.csv`, tags `population`,
+`k-sweep` and `typical` — 95 cells, each with all six baselines and ALNS at the same
+settings. Report ALNS against **each criterion separately**: better / tied / worse, and the
+mean difference in out-of-sample R. This is the main table of chapter 7.
+
+Do not lead with the per-cell maximum over the six. That is an oracle picking the winning
+criterion with hindsight for every instance, so it is an upper bound rather than an
+opponent; report it after the per-criterion table, labelled as a bound.
+
+**2. How does the picture change with budget?** Use tag `k-sweep` only — sources 145
+(out 35) and 271 (out 30) at k = 3…20, and source 13 (out 92) at k = 3…75. Plot R against
+k per source; do not pool the three, since their fan-outs differ and the same k means a
+different fraction of each. Read the hub sweep as the answer to "does it work once the
+budget is a real share of the fan-out", which the population sweep alone cannot show.
+
+**3. Is the estimate trustworthy?** Use every ALNS row in `results.csv`: the SAA−MC gap,
+median and spread. This is 7.1 and it comes *before* questions 1 and 2, because it says how
+much of any difference is fitted to the frozen sample. Note both directions — cells where a
+cut looked better in sample than out, and the four that got worse under a longer search
+(§7b), which is the same effect seen from the other side.
+
+**4. Does a longer search help?** Use `results_scaled.csv` paired against the same cells in
+`results.csv` — a paired per-cell difference, never two independent averages, since the
+cells are the same instances and the pairing removes all between-cell variation. Report the
+split (improved / unchanged / worse), not just the mean, because the mean hides that the
+benefit is concentrated in a few cells.
+
+**Stratify within a group before averaging.** The cells span σ₀ from single digits to over
+600 and k from 3 to 75, so a plain mean is dominated by whichever regime happens to be most
+numerous. At minimum split by reach class (low-reach vs saturated) or by budget share
+`k/out(s)`. Where a group is small, show the cells rather than a summary statistic.
+
+**Exclude, always:** `stop_reason == "isolated"` from any average (solved in closed form, so
+every method scores identically and the average is flattered equally), and the `probe*` rows
+plus everything in `results_scaled.csv` from questions 1 and 2 (ALNS at a different
+iteration budget with no matching baselines).
 
 ## 7b. Iteration budget — a lead, not a result
 
@@ -424,20 +475,30 @@ the instance either needs real search or is hopeless, and `k/out(s)` separates t
 readings. Worth one sentence in chapter 8 as the cheapest available signal, though weaker
 than the improvement share because it is a prior rather than an observation of the run.
 
-**Better: when the search last improved.** Take the iteration that produced the final global
-best, as a fraction of the run. Near 0 means the search converged early and more iterations
-buy nothing; near 1 means it was still improving when the budget cut it off - starvation
-observed rather than predicted.
+**Better: when the search last improved.** Take the iteration that produced the final
+global best, as a fraction of the run. Near 0 means the search converged early; near 1 means
+it was still improving when the budget cut it off — starvation observed rather than
+predicted. Measured by `code/iteration_probe.py` → `data/iteration_probe.csv`, which reads
+the per-segment trace `run_alns` already returns and changes nothing in the search:
 
-This is **not instrumented in the shipped code**: it was measured ad hoc, on an easy cell,
-by reading the iteration of the last global best directly out of `run_alns`. On that cell
-the final improvement arrived at iteration **36 of 300** at k = 3 and **12 of 300** at k = 8
-- shares of 0.12 and 0.04. Both cells gained nothing in the scaled re-run, which is exactly
-what those shares predict. Two observations on one source, so the basis for an argument
-rather than a result: enough to justify the upgrade in chapter 8, not enough to quantify it.
-Adding the column is a few lines in `run_alns` and `_row`, and it was deliberately left out
-here because it arrived after the final experiment had started and would have produced no
-data for the thesis.
+| source | k | last improvement | share | R at 300 |
+|---|---|---|---|---|
+| 96 | 10 | iteration 300 | 1.00 | 0.008 |
+| 123 | 20 | iteration 300 | 1.00 | 0.009 |
+| 145 | 15 | iteration 300 | 1.00 | 0.828 |
+| 201 | 10 | iteration 240 | 0.80 | 0.797 |
+| 421 | 3 | iteration 60 | 0.20 | 0.663 |
+
+**Read this carefully — the share alone is not the signal.** Three cells were still improving
+at the final iteration, but only two of them (96 and 123) were also scoring near zero, and
+those are exactly the two that gained enormously when re-run longer. Cell 145 was still
+improving *and* already at 0.828, so there was little left to win. Cell 421, the only one
+that had clearly converged, gained nothing.
+
+So the diagnostic is the **combination**: a high share says the search had not finished, and
+a low R says there was something left to find. Either alone is not enough — which is a more
+useful thing to have learned than a single-number rule would have been. Five cells on one
+graph: a basis for the chapter 8 argument, not a calibrated criterion.
 
 This is the cheap way to allocate a second pass — run everything at a modest budget, then
 re-run only the cells whose share is high — and it costs one extra column. It could also be
@@ -453,17 +514,21 @@ from the extended budget.
 `data/results_scaled.csv` (ALNS rows only — the baselines do not depend on the iteration
 count, so the stored ones are the comparison).
 
-**The figures below were computed at 37 of 50 cells and must be recomputed from the finished
-file.** The remaining cells are the expensive ones, so they can move the tallies. Of the
-cells that had received more iterations at that point: 4 improved, 22 unchanged, 4 got
-worse, overall mean change +0.001; among cells already scoring R ≥ 0.6 the mean change was
-−0.001. Treat the *shape* as established and the numbers as provisional.
+Of the 43 cells that actually received more iterations: **15 improved, 23 unchanged,
+5 got worse**, mean change +0.016, best cell +0.247. Broken down by how the cell was doing
+beforehand, the pattern is monotone:
 
-So the benefit of a longer search is **concentrated, not diffuse**. It does not contradict
-the probes of §7b; it completes them. The probes targeted cells where ALNS had lost, and
-gained enormously; this re-run samples ordinary cells, and gains nothing. Spending four
-times the compute uniformly buys almost nothing, which is the argument for allocating it by
-the improvement share instead of by a global constant.
+| the cell was | n | mean change |
+|---|---|---|
+| struggling (R < 0.3) | 5 | **+0.064** |
+| middling (0.3 ≤ R < 0.6) | 10 | **+0.033** |
+| already good (R ≥ 0.6) | 28 | **+0.002** |
+
+**The worse a cell was doing, the more a longer search recovers**, and cells already
+performing well gain nothing. The compute bought this at **74 minutes against 20 — a factor
+of 3.7** for a mean gain of +0.016 spread very unevenly. That is the argument for allocating
+search effort by need rather than raising a global constant, and it now rests on a gradient
+rather than on two probes.
 
 **Read the selection before reading the result.** These 50 were chosen as the cheapest cell
 per (stratum, budget) pair, and cheap correlates with easy — most were already converged, as
