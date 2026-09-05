@@ -322,8 +322,70 @@ Two further honest notes:
   and high-`p` edges are precisely the ones worth cutting. Porting his method to a
   heterogeneous-`p` network is a genuine finding, not an implementation detail.
 
+## 7a. The measurement run — what is in `data/results.csv`
+
+Produced by `code/measure.py`, one RNG seed throughout, measurement sources only. 100
+cells, each holding seven rows (six baselines + ALNS). Read the numbers from the CSV; they
+are deliberately not copied here.
+
+| tag | what it is |
+|---|---|
+| `population` | all 28 sources at one budget per out-degree band (3 / 5 / 10 / 20) |
+| `k-sweep` | sources 145 (out 35) and 271 (out 30) at k = 3…20; source 13 (out 92) at k = 3…75, so one sweep reaches a budget that is a real fraction of a hub's fan-out |
+| `typical` | one cell per source at k ≈ 20 %, 35 % and 50 % of its out-degree, so "a suitable budget" means the same thing on a small source and a large one |
+| `probe500`, `probe1000` | the iteration probe, §7b |
+
+**How to compare methods, and how not to.** The fair comparisons are ALNS against each
+criterion individually, and against the best criterion chosen *globally*. A per-cell
+maximum over all six baselines is an **oracle** — it picks the winning criterion with
+hindsight, separately for every instance — and is not a method anyone could deploy. It is
+useful as an upper bound, but a table that leads with it understates ALNS for the same
+reason §6 forbids a column that pools a method with its own competitors.
+
+On the first 43 cells ALNS beat five of the six criteria decisively (mean difference in
+out-of-sample R between +0.16 and +0.44) and drew with the strongest, `probability`
+(−0.005). Split by budget, that draw resolves: ALNS leads at moderate budgets and falls
+behind at k = 20, which is only the saturated hubs. Recompute all of this from the full
+100-cell file rather than trusting these figures.
+
+**Trivial and near-trivial cells.** `stop_reason == "isolated"` marks instances solved in
+closed form. Cells where several methods all reach R ≈ 0.97 are not marked but flatter
+every method equally, so state whether they are included in any average.
+
+## 7b. Iteration budget — a lead, not a result
+
+`max_iter` is fixed at 300 regardless of k or out-degree, which is very little search when
+hop0 alone holds hundreds of candidates. Two cells where a baseline had beaten ALNS — so a
+better cut demonstrably exists and is reachable — were re-run with more iterations and
+nothing else changed. Both improved sharply:
+
+| cell | out(s) | 300 iterations | more | best baseline |
+|---|---|---|---|---|
+| source 96, k = 10 | 44 | 0.008 | **0.169** at 500 | 0.385 |
+| source 123, k = 20 | 55 | 0.009 | **0.487** at 1000 | 0.482 |
+
+The second one *overturns the loss*: at 300 iterations ALNS scored 0.009 against the best
+baseline's 0.482, and at 1000 it scores 0.487 and edges ahead. The first improves twentyfold
+without catching its baseline.
+
+**This changes how the headline should be hedged.** The population sweep's weak showing at
+large k, on sources with large fan-out, cannot be attributed to the method when the same
+cell improves by a factor of fifty under nothing but a longer search. State the comparison
+at the parameters actually used, and say plainly that those parameters under-serve the
+large-budget cells rather than claiming ALNS is unsuited to them.
+
+Still **one probe on two cells, not an experiment** — single RNG seed, cells chosen because
+ALNS had lost on them. The fix, scaling the iteration budget with k and out-degree, belongs
+in chapter 8.
+
+Note for whoever runs this next: selecting probe cells by worst *absolute* score picks the
+saturated hubs, where no budget in range can contain the source and the ceiling is low for
+reasons unrelated to search. Select by the *loss against a baseline* instead.
+
 ## 8. Deliberately not done — material for chapter 8
 
+- **Scaling the iteration budget** with k and out-degree instead of the fixed 300, which
+  §7b shows is the single most promising change and is currently supported by one probe.
 - **A σ-greedy baseline** (Kimura's own proposed method), which is the stronger opponent
   and the one that would make §1.1's argument empirical rather than cited. The exact
   reformulation that avoids his sample loss is derived in §II.5 below.

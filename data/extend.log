@@ -1,0 +1,7 @@
+62 new cells, ~2186s of ALNS predicted; budget 3300s
+workbench ready in 8s
+
+probe: 1200 iterations on 3 cells (was nan)
+
+  source     3 k=20  R_mc +0.006 -> +0.015   (best greedy +0.007)   250s
+  source    96 k=10  R_mc +0.008 -> +0.400   (best greedy +0.385)   209s

@@ -136,5 +136,99 @@ def main(pilot: bool = False):
     return frame
 
 
+# ---------------------------------------------------------------- stage 2 ----
+#
+# Experiment C: iteration probe. Two cells where ALNS lost to a baseline - so a better cut
+# demonstrably exists and is reachable - run again with more iterations and nothing else
+# changed. Cells whose ceiling is low for reasons other than search (a hub at a budget far
+# too small to contain it) cannot answer this question and are not used.
+PROBES = [(96, 10, 500), (123, 20, 1000)]
+
+# Experiment D: extend the hub budget sweep until k is a real fraction of the fan-out.
+# Source 13 has out-degree 92 and was only swept to k=20, i.e. never past a fifth of its
+# out-edges; these carry it to four fifths.
+HUB_SWEEP = (13, (30, 45, 60, 75))
+
+# Experiment E: fill out the picture with one cell per source at budgets that are a
+# sensible share of what that source can spend, rather than a fixed k that means something
+# different on every source.
+TYPICAL_SHARES = (0.20, 0.35, 0.50)
+TARGET_CELLS = 100
+
+
+def typical_cells(sample, already, room):
+    """Cells at a budget proportional to the source's out-degree, cheapest first."""
+    candidates = []
+    for _, row in sample.iterrows():
+        out_degree = int(row.out_degree)
+        for share in TYPICAL_SHARES:
+            k = max(3, round(share * out_degree))
+            if k < out_degree and (int(row.source), k) not in already:
+                already.add((int(row.source), k))
+                candidates.append((int(row.source), k, float(row.predicted_seconds),
+                                   "typical"))
+    return sorted(candidates, key=lambda c: c[2])[:room]
+
+
+def final():
+    """Everything still owed for the results chapter, written after every cell."""
+    started = time.time()
+    frame = pd.read_csv(DATA_DIR / "results.csv")
+    sample = pd.read_csv(DATA_DIR / "sample.csv")
+    measurement = sample[sample.role == "measurement"]
+    already = set(zip(frame.source, frame.k))
+
+    done = frame.groupby(["source", "k", "tag"]).ngroups
+    hub_cells = [(HUB_SWEEP[0], k, "k-sweep") for k in HUB_SWEEP[1]]
+    room = TARGET_CELLS - done - len(PROBES) - len(hub_cells)
+    fill = typical_cells(measurement, already | {(s, k) for s, k, _ in hub_cells}, room)
+
+    print(f"{done} cells already; adding {len(PROBES)} probes, {len(hub_cells)} hub-sweep, "
+          f"{len(fill)} typical -> {done + len(PROBES) + len(hub_cells) + len(fill)}")
+
+    bench = Workbench()
+    print(f"workbench ready in {time.time() - started:.0f}s\n")
+
+    def store(new):
+        nonlocal frame
+        frame = pd.concat([frame, pd.DataFrame(new)], ignore_index=True)
+        frame.to_csv(DATA_DIR / "results.csv", index=False)
+
+    for source, k, iterations in PROBES:
+        before = frame[(frame.source == source) & (frame.k == k)
+                       & (frame.method == "alns")].R_mc.iloc[0]
+        ev_saa, ev_mc = bench.evaluators(source)
+        produced = run_cell(bench.context(source), k, ev_saa, ev_mc,
+                            seeds=(ALNS_RUN_SEED,), baselines=False,
+                            alns_params={"max_iter": iterations}, tag=f"probe{iterations}")
+        store(produced)
+        print(f"probe  source {source:>5} k={k:<3} {iterations:>5} iter: "
+              f"R_mc {before:+.3f} -> {produced[0]['R_mc']:+.3f}")
+
+    queue = [(s, k, 0.0, tag) for s, k, tag in hub_cells] + fill
+    for n, (source, k, _, tag) in enumerate(queue, start=1):
+        if time.time() - started > BUDGET_SECONDS:
+            print(f"\n! budget reached at {n - 1} of {len(queue)}")
+            break
+        cell_started = time.time()
+        ev_saa, ev_mc = bench.evaluators(source)
+        produced = run_cell(bench.context(source), k, ev_saa, ev_mc,
+                            seeds=(ALNS_RUN_SEED,), tag=tag)
+        store(produced)
+        alns = [r for r in produced if r["method"] == "alns"][0]
+        best = max(r["R_mc"] for r in produced if r["method"].startswith("greedy"))
+        print(f"[{n:>3}/{len(queue)}] {tag:<8} source {source:>5} k={k:<3} "
+              f"alns {alns['R_mc']:+.3f} vs best {best:+.3f}  "
+              f"{time.time() - cell_started:>5.1f}s (total {(time.time()-started)/60:.1f}m)")
+
+    print(f"\nresults.csv: {len(frame)} rows, "
+          f"{frame.groupby(['source','k','tag']).ngroups} cells, "
+          f"{(time.time() - started) / 60:.1f} min")
+    return frame
+
+
 if __name__ == "__main__":
-    main(pilot="--pilot" in sys.argv)
+    if "--final" in sys.argv:
+        final()
+    else:
+        main(pilot="--pilot" in sys.argv)

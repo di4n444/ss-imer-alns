@@ -40,6 +40,7 @@ cd ss-imer-alns/code
 ../.venv/bin/python sample_sources.py       # sample.csv
 ../.venv/bin/python hop_layers.py           # hop_layers.csv
 ../.venv/bin/python calibrate.py            # calibration.csv      (~13 min, not thesis content)
+../.venv/bin/python measure.py              # results.csv   (~35 min)
 ../.venv/bin/python run_experiment.py       # CSV schema check
 ../.venv/bin/python smoke_test.py           # end-to-end, one source
 ```
@@ -77,7 +78,9 @@ calibration enforces a wall-clock budget and would truncate.
 
 **Phase 1 (architecture) — complete.** All modules written, three test suites passing.
 
-**Phase 2 (experiment) — calibration done, measurement not started.**
+**Phase 2 (experiment) — complete.** 100 cells in `data/results.csv`, produced by
+`code/measure.py`. See REPORT §7a for what each tag holds and how the methods may
+and may not be compared.
 
 **Phase 3 (thesis) — chapters 1–6 written.** Everything up to the results chapter is
 drafted; 7 waits on the measurement runs.
@@ -99,19 +102,22 @@ drafted; 7 waits on the measurement runs.
   numbering, alphabetical bibliography, template styles for lists, tables and code
   listings, and two-pass section cross-referencing
 
-### Next — Phase 2
+### Phase 2 — done
 
-- [ ] Curate showcase (source, k) pairs, each chosen for a specific phenomenon, with the
-      reason recorded. Not a uniform grid.
-- [ ] Dedicated k-sweep experiment: a few representative sources, k varied.
-- [ ] Run the measurement matrix → per-run CSV tagged by showcase/purpose.
-      Budget: one ALNS run over all 28 measurement sources is ~990 s, so a full sweep at
-      3 budgets × 3 seeds is roughly 2.5 h.
-- [ ] Tie-frequency and tie-break-variance pass: tie-group sizes per criterion, and the
-      σ/R spread across a few seeds. Report the spread, do not average it away.
-- [ ] Do the greedy baselines also reach the enumerated optimum on small sources
-      (out ≤ 10)? Separates a weak *criterion* from a weak *search*.
-- [ ] Out-of-sample validation of the best cuts found and record the difference between SAA and MC spread.
+- [x] Population sweep: all 28 measurement sources, one budget per out-degree band
+- [x] Budget sweeps: two mid sources (k = 3…20) and one hub (k = 3…75)
+- [x] Typical-budget cells at 20 / 35 / 50 % of each source's out-degree
+- [x] Out-of-sample validation on every cell, with the SAA−MC gap recorded per row
+- [x] Iteration probe (REPORT §7b) — the one result that changes the headline's hedging
+
+Not done, and chapter 8 material rather than gaps to fill before writing:
+
+- [ ] Seed-to-seed spread. One RNG seed throughout, so tie-break variance is acknowledged
+      and not measured. Do not imply otherwise in chapter 7.
+- [ ] Iteration budget scaled with k and out-degree — see REPORT §7b.
+- [ ] A σ-greedy baseline (REPORT §II.5).
+- [ ] Do the greedy baselines reach the enumerated optimum on small sources (out ≤ 10)?
+      Separates a weak *criterion* from a weak *search*.
 
 ### Next — Phase 3 (thesis)
 
@@ -125,7 +131,11 @@ Chapters, in the agreed structure:
 - [x] 5. Metode rješavanja
 - [x] 6. Implementacija i eksperimentalni postav — 6.1 architecture, 6.2 frozen scenarios,
       6.3 source sample, 6.4 measures and protocol
-- [ ] 7. Rezultati i rasprava — after the measurement runs
+- [ ] 7. Rezultati i rasprava. Data is ready in `data/results.csv`. Read it, do not
+      retype it. Structure agreed: **7.1 validity of the estimate** (the SAA−MC gap,
+      before any method comparison), then the method comparison, then the budget sweeps.
+      Lead with ALNS against each criterion individually — the per-cell best baseline is
+      an oracle, not a method (REPORT §7a).
 - [ ] 8. Mogućnosti poboljšanja i budući rad. Already promised by the text: the σ-greedy
       of REPORT §II.5 is named in 5.1 as the next step, so it has to appear here.
 - [ ] Zaključak, Sažetak, Summary
