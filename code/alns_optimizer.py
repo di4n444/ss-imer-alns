@@ -176,10 +176,6 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None,
     # |hop0|-k+q > q candidates left), but that is an argument, not a measurement.
     fallback_used = _zeroed(scopes)
     best_hits_by_hop, neutral_moves = {}, _zeroed(HEURISTICS)
-    # Which iteration last produced a new global best. If that is near the end, the search
-    # was still improving when the iteration budget cut it off - the difference between a
-    # run that converged and one that was starved, which no other recorded quantity shows.
-    last_improvement = -1
     trace = []
 
     # sigma >= 1 always (the source counts itself), so reach == 1 means the source is
@@ -260,7 +256,6 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None,
             current, current_reach = candidate, candidate_reach
             if is_new_best:
                 best, best_reach = set(candidate), candidate_reach
-                last_improvement = iteration
                 best_hits_by_heuristic[repair_name] += 1
                 best_hits_by_scope[scope] += 1
                 for hop in {ctx.hop_of_edge[e] for e in added}:
@@ -304,11 +299,6 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None,
         "best_reach_saa": best_reach,
         "stop_reason": stop_reason,
         "iterations_done": iteration + 1,
-        "last_improvement": last_improvement,
-        # 1.0 means the final iteration still improved on everything before it; near 0
-        # means the run had long since converged and the extra iterations bought nothing.
-        "improvement_share": (last_improvement + 1) / (iteration + 1) if iteration >= 0
-                             else 0.0,
         "hop_mix": hop_mix,
         "scope_weights": scope_weights,
         "repair_weights": repair_weights,

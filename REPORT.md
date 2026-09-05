@@ -341,6 +341,15 @@ are deliberately not copied here.
 | `typical` | one cell per source at k ≈ 20 %, 35 % and 50 % of its out-degree, so "a suitable budget" means the same thing on a small source and a large one |
 | `probe500`, `probe1000` | the iteration probe, §7b |
 
+`data/results_scaled.csv` is a **separate file**, tag `scaled`: the same instances re-run at
+`max_iter = min(100k, 2000)`. Keep it separate when computing anything about method
+performance.
+
+**Rows to exclude from any method comparison**: the `probe*` tags and everything in
+`results_scaled.csv`. They hold ALNS at a different iteration budget with no matching
+baselines, so pooling them with the main run compares ALNS at one setting against baselines
+measured against another. They answer the iteration question (§7b) and nothing else.
+
 **How to compare methods, and how not to.** The fair comparisons are ALNS against each
 criterion individually, and against the best criterion chosen *globally*. A per-cell
 maximum over all six baselines is an **oracle** — it picks the winning criterion with
@@ -415,12 +424,20 @@ the instance either needs real search or is hopeless, and `k/out(s)` separates t
 readings. Worth one sentence in chapter 8 as the cheapest available signal, though weaker
 than the improvement share because it is a prior rather than an observation of the run.
 
-**Better, `run_alns` now reports when it last improved.** `last_improvement` is the
-iteration that produced the final global best and `improvement_share` is that as a fraction
-of the run. Near 0 means the search converged early and more iterations buy nothing; near 1
-means it was still improving when the budget cut it off, which is starvation observed
-rather than predicted. Measured on an easy cell: shares of 0.12 and 0.04, matching the
-re-run finding that such cells gain nothing from more iterations.
+**Better: when the search last improved.** Take the iteration that produced the final global
+best, as a fraction of the run. Near 0 means the search converged early and more iterations
+buy nothing; near 1 means it was still improving when the budget cut it off - starvation
+observed rather than predicted.
+
+This is **not instrumented in the shipped code**: it was measured ad hoc, on an easy cell,
+by reading the iteration of the last global best directly out of `run_alns`. On that cell
+the final improvement arrived at iteration **36 of 300** at k = 3 and **12 of 300** at k = 8
+- shares of 0.12 and 0.04. Both cells gained nothing in the scaled re-run, which is exactly
+what those shares predict. Two observations on one source, so the basis for an argument
+rather than a result: enough to justify the upgrade in chapter 8, not enough to quantify it.
+Adding the column is a few lines in `run_alns` and `_row`, and it was deliberately left out
+here because it arrived after the final experiment had started and would have produced no
+data for the thesis.
 
 This is the cheap way to allocate a second pass — run everything at a modest budget, then
 re-run only the cells whose share is high — and it costs one extra column. It could also be
@@ -432,9 +449,15 @@ from the extended budget.
 
 ### What the scaled re-run showed
 
-50 cells at `max_iter = min(100k, 2000)`, everything else unchanged. Of the cells that
-actually got more iterations: **4 improved, 22 unchanged, 4 got worse**, overall mean change
-+0.001. Among cells already scoring R ≥ 0.6 the mean change was −0.001 — nothing at all.
+50 cells at `max_iter = min(100k, 2000)`, everything else unchanged, written to
+`data/results_scaled.csv` (ALNS rows only — the baselines do not depend on the iteration
+count, so the stored ones are the comparison).
+
+**The figures below were computed at 37 of 50 cells and must be recomputed from the finished
+file.** The remaining cells are the expensive ones, so they can move the tallies. Of the
+cells that had received more iterations at that point: 4 improved, 22 unchanged, 4 got
+worse, overall mean change +0.001; among cells already scoring R ≥ 0.6 the mean change was
+−0.001. Treat the *shape* as established and the numbers as provisional.
 
 So the benefit of a longer search is **concentrated, not diffuse**. It does not contradict
 the probes of §7b; it completes them. The probes targeted cells where ALNS had lost, and

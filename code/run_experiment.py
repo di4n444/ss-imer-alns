@@ -55,8 +55,7 @@ def _row(result, ctx, k, sigma0_saa, sigma0_mc, elapsed, tag) -> dict:
         "stop_reason": result["stop_reason"],
         "seconds": round(elapsed, 2),
     }
-    for key in ("iterations_done", "last_improvement", "improvement_share",
-                "evaluations", "scope_weights", "repair_weights",
+    for key in ("iterations_done", "evaluations", "scope_weights", "repair_weights",
                 "destroy_weights", "best_hits_by_heuristic", "best_hits_by_hop",
                 "best_hits_by_scope", "scope_selected", "neutral_moves", "fallback_used",
                 "layer_sizes", "q_bounds",
