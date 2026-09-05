@@ -38,7 +38,8 @@ cd ss-imer-alns/code
 ../.venv/bin/python analyse_graph.py        # topology_summary.csv, edge_features.csv
 ../.venv/bin/python source_profile.py       # source_profile.csv   (~2 min)
 ../.venv/bin/python sample_sources.py       # sample.csv
-../.venv/bin/python calibrate.py            # calibration.csv      (~13 min)
+../.venv/bin/python hop_layers.py           # hop_layers.csv
+../.venv/bin/python calibrate.py            # calibration.csv      (~13 min, not thesis content)
 ../.venv/bin/python run_experiment.py       # CSV schema check
 ../.venv/bin/python smoke_test.py           # end-to-end, one source
 ```
@@ -86,7 +87,7 @@ drafted; 7 waits on the measurement runs.
 - `config.py`, `create_graph.py`, `analyse_graph.py`, `heuristics.py`,
   `create_subgraphs.py`, `operators.py`, `source_context.py`, `evaluator.py`,
   `alns_optimizer.py`, `greedy_baseline.py`, `source_profile.py`, `sample_sources.py`,
-  `run_experiment.py`, `calibrate.py`, `smoke_test.py`
+  `run_experiment.py`, `calibrate.py`, `hop_layers.py`, `smoke_test.py`
 - Tests: `test_evaluator.py` (objective vs. igraph oracle, one-pass marginals,
   monotonicity, buffer cleanliness, cache correctness across sources, sampler bias),
   `test_features.py` (spectral index alignment, three ways), `test_scenarios.py`
@@ -121,14 +122,12 @@ Chapters, in the agreed structure:
 - [x] 2. Analiza mreže Bitcoin Alpha
 - [x] 3. Formulacija problema SS-IMER
 - [x] 4. Kriteriji odabira bridova
-- [x] 5. Metode rješavanja — 5.2 ended up with eight subsections rather than five: the
-      hop-layer mechanism needed three (the layers, why a wheel rather than a horizon,
-      and what the learned weights do *not* license), and the departures from R&P are
-      tabulated in 5.2.8 rather than scattered.
-- [x] 6. Implementacija i eksperimentalni postav
+- [x] 5. Metode rješavanja
+- [x] 6. Implementacija i eksperimentalni postav — 6.1 architecture, 6.2 frozen scenarios,
+      6.3 source sample, 6.4 measures and protocol
 - [ ] 7. Rezultati i rasprava — after the measurement runs
 - [ ] 8. Mogućnosti poboljšanja i budući rad. Already promised by the text: the σ-greedy
-      of REPORT §15.3 is named in 5.1 as the next step, so it has to appear here.
+      of REPORT §II.5 is named in 5.1 as the next step, so it has to appear here.
 - [ ] Zaključak, Sažetak, Summary
 
 All figures for chapters 1–6 exist: `fig1_1` ER/WS/BA, `fig1_2` live-edge, `fig2_1`
@@ -136,10 +135,18 @@ degree distribution, `fig2_2` probability distribution, `fig2_3` bow-tie, `fig2_
 population, `fig3_1` choke point, `fig5_1` ALNS loop, `fig5_2` hop layers, `fig6_1`
 pipeline.
 
-**Numbers and settings are read at build time, never retyped.** Chapters 2, 4, 5 and 6
-read `data/*.csv`; chapters 5 and 6 read `code/config.py` through `thesis/params.py`, so
-every parameter value in the prose is the one the code actually runs with. Chapter 6.4
-recomputes the calibration verdict from `data/calibration.csv` rather than quoting it.
+**Structure is fixed and subsections are not to be added.** The agreed outline above is
+what the chapters follow; the first draft grew extra subsections for design dilemmas and
+they were removed. A dilemma worth mentioning gets a sentence inside the relevant section,
+not a heading of its own. The thesis describes the architecture as it stands — it is not
+a history of the project, which now lives in Part II of [REPORT.md](REPORT.md).
+
+**Calibration is not in the thesis.** It was run, every default held, and a tuning step
+that changed nothing is not a result. Recorded in REPORT.md Part II instead.
+
+**Numbers and settings are read at build time, never retyped.** Chapters 2, 4 and 5 read
+`data/*.csv`; chapters 3, 5 and 6 read `code/config.py` through `thesis/params.py`, so
+every parameter value in the prose is the one the code actually runs with.
 
 **Cross-references resolve themselves.** Headings carry `label=`, the text asks for
 `t.sec("label")`, and `build_thesis.py` renders twice — once to discover the numbers,
@@ -148,10 +155,9 @@ build refuses to save if any reference is still unresolved. Equations, figures, 
 listings work the same way via `t.ref`, `t.figref`, `t.tabref` and `t.coderef`. Do not
 write a section number by hand.
 
-**Where calibration is written up: §6.4, as method, not as a result.** It describes R&P's
-one-at-a-time procedure, the tuning set, the decision rule and the chosen values, and
-states the two limitations (single seed, eight tuning cells). Per-setting scores are not
-reported there — they are in `data/calibration.csv` if ever needed.
+**Length.** Chapters 1–6 currently run about 34 pages of text. The target is roughly 30
+before chapters 7 and 8 add another ten, so the remaining trim comes out of prose rather
+than out of substance.
 
 ---
 

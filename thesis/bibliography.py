@@ -27,7 +27,6 @@ SOURCES = [
     ("castellano2010", "Castellano i Pastor-Satorras", 2010),
     ("sheldon2010", "Sheldon i sur.", 2010),
     ("tong2012", "Tong i sur.", 2012),
-    ("khalil2014", "Khalil i sur.", 2014),
     ("kumar2016", "Kumar i sur.", 2016),
     ("kumar2018", "Kumar i sur.", 2018),
     ("coro2021", "Coró i sur.", 2021),
@@ -115,8 +114,6 @@ ENTRIES = {
         "Sheldon, D., Dilkina, B., Elmachtoub, A., Finseth, R., Sabharwal, A., Conrad, J., Gomes, C., Shmoys, D., Phillips, A. Maximizing the Spread of Cascades Using Network Design. U: Proceedings of the 26th Conference on Uncertainty in Artificial Intelligence (UAI), 2010.",
     "tong2012":
         "Tong, H., Prakash, B. A., Eliassi-Rad, T., Faloutsos, M., Faloutsos, C. Gelling, and Melting, Large Graphs by Edge Manipulation. U: IEEE 12th International Conference on Data Mining, 2012.",
-    "khalil2014":
-        "Khalil, E. B., Dilkina, B., Song, L. Scalable diffusion-aware optimization of network topology. U: Proceedings of the 20th ACM SIGKDD international conference on Knowledge discovery and data mining, 2014.",
     "kumar2016":
         "Kumar, S., Spezzano, F., Subrahmanian, V. S., Faloutsos, C. Edge Weight Prediction in Weighted Signed Networks. U: IEEE International Conference on Data Mining (ICDM), 2016.",
     "kumar2018":

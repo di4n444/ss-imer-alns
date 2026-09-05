@@ -115,7 +115,7 @@ def _dataset(t, figures, topo, edges):
 
 
 def _small_world(t, figures, topo):
-    t.h2("Svojstva malog svijeta i raspodjela stupnjeva")
+    t.h2("Svojstva malog svijeta i raspodjela stupnjeva", label="malisvijet")
 
     t.p("Za provjeru efekta malog svijeta {watts1998} mjere se prosječna duljina "
         "najkraćeg puta i koeficijent grupiranja te se uspoređuju s Erdős-Rényijevim "
