@@ -144,12 +144,13 @@ def _uzorak(t):
         "izlaznih bridova da bi podnijela i najmanji razmatrani proračun, a doseg se među "
         "preostalima mijenja kroz cijeli raspon, bez prirodne podjele u skupine.")
 
-    t.p("Uzorak je zato slojevit po dvjema osima istodobno. Prva je izlazni stupanj izvora, "
-        "jer on ", i("jest"),
+    t.p("Uzorak je zato slojevit po dvjema osima istodobno, a svaka kombinacija pojasa "
+        "jedne i razreda druge osi čini jednu skupinu izvora iz koje se zasebno izvlači. "
+        "Prva je os izlazni stupanj izvora, jer on ", i("jest"),
         " skup kandidata sloja 0, pa određuje i koji se proračuni mogu proučavati i koliko "
         "je pretraživanje teško. Druga je doseg neizmijenjene mreže, jer o njemu ovisi "
         "trajanje pokretanja, a topološki različiti čvorovi mogu imati praktički jednak "
-        "doseg, pa jedna os ne bi bila dovoljna. Osobito su zanimljive ćelije izvan "
+        "doseg, pa jedna os ne bi bila dovoljna. Osobito su zanimljive skupine izvan "
         "dijagonale, dakle izvori s malo izlaznih bridova koji ipak dosežu velik dio mreže: "
         "upravo je to geometrija iz odjeljka ", t.sec("slozenost"),
         ", u kojoj nekoliko veza vodi prema velikoj komponenti, pa se najbolji rez ne mora "
@@ -158,18 +159,18 @@ def _uzorak(t):
     calib = SAMPLE[SAMPLE.role == "calibration"]
     measure = SAMPLE[SAMPLE.role == "measurement"]
 
-    t.p("Iz svake se ćelije izvlači unaprijed određen broj izvora, i to tako da se najprije "
+    t.p("Iz svake se skupine izvlači unaprijed određen broj izvora, i to tako da se najprije "
         "uzmu izvori namijenjeni pripremnim pokretanjima, a mjerni izvori tek iz preostalih. "
         "Time su ta dva skupa razdvojena po konstrukciji, a ne po disciplini onoga tko "
         "pokreće eksperiment. Izvučeno je ", count(len(measure), "izvor", "izvora", "izvora"),
         " za mjerenje i ", count(len(calib), "izvor", "izvora", "izvora"),
         " za pripremu, raspoređenih po ",
-        count(SAMPLE.cell.nunique(), "ćeliji", "ćelije", "ćelija"),
+        count(SAMPLE.cell.nunique(), "skupini", "skupine", "skupina"),
         ". Uzorak je izvučen jednom, iz jednog sjemena, i jedini je uzorak koji se u radu "
         "koristi.")
 
-    t.p("Jedna ćelija zaslužuje napomenu: izvora s više od pedeset izlaznih bridova koji "
-        "ipak imaju malen doseg u cijeloj mreži ima svega jedan, pa ta ćelija ne može "
+    t.p("Jedna skupina zaslužuje napomenu: izvora s više od pedeset izlaznih bridova koji "
+        "ipak imaju malen doseg u cijeloj mreži ima svega jedan, pa ta skupina ne može "
         "popuniti mjerni dio uzorka. To nije nedostatak uzorkovanja nego svojstvo mreže — "
         "čvorovi visokog izlaznog stupnja gotovo su bez iznimke i čvorovi velikog dosega. "
         "Uz svaki se izvor bilježi i predviđeno trajanje pokretanja, izračunato iz njegova "
@@ -205,9 +206,13 @@ def _protokol(t):
         "proračun dopušta potpuno izoliranje izvora; njih treba isključiti iz prosjeka jer u "
         "njima svaka metoda postiže isti, dokazivo optimalan rezultat.")
 
-    t.p("Naposljetku, slučajnost se izvještava, a ne uklanja. Pet od šest pohlepnih metoda "
-        "posve je determinističko, pa se računaju jednom, dok se slučajna pohlepna metoda i "
-        "metaheuristika pokreću s više sjemena. Dobiveno raspršenje rezultata prikazuje se "
-        "kao svojstvo metode, u skladu s odjeljkom ", t.sec("izjednacenost"),
-        ", umjesto da se usrednjavanjem prikrije koliko na ishod utječe izbor među jednako "
-        "ocijenjenim bridovima.")
+    t.p("Naposljetku, o slučajnosti. Pet od šest pohlepnih metoda posve je "
+        "determinističko, pa im je rezultat jednoznačan i računa se jednom. Slučajna "
+        "pohlepna metoda i metaheuristika ovise o sjemenu generatora slučajnih brojeva, "
+        "koje se zato bilježi uz svaki rezultat, tako da je svako pokretanje moguće "
+        "ponoviti. Koliko ishod ovisi o izboru među jednako ocijenjenim bridovima "
+        "(odjeljak ", t.sec("izjednacenost"),
+        ") može se utvrditi jedino ponavljanjem istog pokretanja s više sjemena; to je "
+        "mjerenje zbog svoje cijene ostavljeno kao zasebno pitanje, o kojem govori osmo "
+        "poglavlje. Ondje gdje se više sjemena koristi, raspršenje se prikazuje kao "
+        "svojstvo metode, a ne usrednjuje.")

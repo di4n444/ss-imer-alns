@@ -249,6 +249,48 @@ def spectral_edge_scores(g: ig.Graph) -> dict:
     return {e.index: float(u[e.source] * v[e.target]) for e in g.es}
 
 
+_DISTANCE_CACHE: dict = {}  # id(graph) -> (graph, matrix); the graph is kept so the id
+                            # cannot be reused by a later object after this one is freed
+
+
+def node_distances(g: ig.Graph):
+    """Pairwise shortest-path distance between every two nodes, ignoring edge direction.
+
+    This is the SS-IMER counterpart of R&P's normalised road distance in the relatedness
+    measure (eq. 17), which asks how far apart two requests are. Our nodes carry no
+    coordinates, but the graph itself is a metric space, so the number of hops between two
+    nodes is the natural stand-in.
+
+    Undirected deliberately: the question is how far apart two edges sit in the network,
+    not whether a cascade can travel from one to the other - the latter is already what the
+    hop layers and the time term measure. Directed distances would also be infinite for
+    most pairs and the term would collapse.
+
+    Unreachable pairs are set one step beyond the largest real distance, so "no connection
+    at all" ranks as the least related rather than breaking the arithmetic.
+
+    Computed once per graph (~3 s, 27 MB as int16) and cached, since it is
+    source-independent and the ALNS loop needs an O(1) lookup.
+    """
+    import numpy as np
+    from scipy.sparse.csgraph import shortest_path
+
+    hit = _DISTANCE_CACHE.get(id(g))
+    if hit is not None and hit[0] is g:
+        return hit[1]
+
+    adjacency = g.get_adjacency_sparse()
+    distances = shortest_path(adjacency + adjacency.T, method="D", unweighted=True,
+                              directed=False)
+    unreachable = ~np.isfinite(distances)
+    longest = int(distances[~unreachable].max())
+    distances[unreachable] = longest + 1
+    matrix = distances.astype(np.int16)
+
+    _DISTANCE_CACHE[id(g)] = (g, matrix)
+    return matrix
+
+
 def node_territories(g: ig.Graph, depth: int = TERRITORY_DEPTH) -> list:
     """For each node, the set of nodes it can reach within `depth` hops (itself excluded).
 

@@ -184,17 +184,26 @@ its two locations are the tail and the head:
 
 | R&P term | weight | our counterpart |
 |---|---|---|
-| φ location | 9 | do the two edges share a tail / a head |
+| φ location | 9 | hops between the two tails and between the two heads, undirected, normalised by the graph's longest distance |
 | χ time | 3 | BFS hop of each endpoint from `s` — under IC the earliest a node can be reached *is* its hop |
 | ψ load | 2 | the edge's transmission probability |
 | ω servable set | 5 | overlap of the bounded downstream territory each edge feeds, by R&P's own min-normalised overlap coefficient |
 
-The ω term is what makes the measure work at all here: within one hop layer every tail is
-`s` and every head is one step away, so φ and χ are constant by construction, and without
-ω relatedness collapses to `|p_a − p_b|` over ten discrete values. Territory is bounded at
-depth 2 for the same reason R&P bound `K_i`: on a graph whose SCC holds 86.7% of nodes the
-unbounded descendant set is nearly everything for nearly everyone, and every pair would
-look identical.
+φ was first implemented as a co-location indicator (0 if the two edges share the
+endpoint, else 1), on the grounds that our nodes carry no coordinates. That threw away
+information the graph does have: it is itself a metric space, so the **number of hops**
+between two nodes is the natural stand-in for R&P's road distance, and it is what the code
+now uses (`analyse_graph.node_distances`, undirected, normalised by the longest distance).
+Undirected deliberately — the question is how far apart two edges sit, not whether a
+cascade can travel between them, which is what the hop layers and χ already measure.
+All-pairs distances cost ~3 s and 27 MB once per graph, cached, so the lookup in the loop
+is O(1).
+
+Within one hop layer every tail is still `s`, so the tail half of φ and the χ term are
+constant there by construction; the variation comes from how far apart the two *heads* sit,
+from the probability, and from ω. Territory for ω is bounded at depth 2 for the same reason
+R&P bound `K_i`: on a graph whose SCC holds 86.7% of nodes the unbounded descendant set is
+nearly everything for nearly everyone, and every pair would look identical.
 
 **Repair** is one operator per criterion, using the same `y^p` draw.
 
@@ -350,11 +359,12 @@ Each was real, each is fixed, and each is now defended by a test or a structural
   ones. No published result was affected, but it would have fired the moment
   `run_experiment.py` reused an evaluator, which is the obvious optimisation.
 - **`destroy_related` was `destroy_random` with extra steps.** Three of R&P's four
-  relatedness terms were implemented; the missing ω is the only one that varies inside a
+  relatedness terms were implemented; the missing ω is the only one that varied inside a
   hop layer. Measured on 20-edge hop0 cuts, 190 pairs: 2 distinct relatedness values on the
   out-degree-486 hub. After restoring ω and the head half of χ: 29 and 161. This is why
   R&P's tuned (9,3,2,5) is usable — equal weights had been a symptom of the missing term,
-  not a choice.
+  not a choice. Replacing φ's co-location indicator with a real hop distance later took the
+  same measurement to 140 distinct values over 190 pairs.
 - **`ctx.edges_by_hop[0]` raised KeyError** for out-degree-0 sources (411 of 3683).
 - **R&P's visited-set aliased `evaluator.cache`**, which raised TypeError on a cacheless
   evaluator and would have leaked one run's visited solutions into the next.

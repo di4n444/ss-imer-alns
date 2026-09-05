@@ -175,6 +175,7 @@ class Thesis:
 
         block = self._place(self.d.add_paragraph(style=style))
         run = block.add_run()
+        run.font.size = Pt(10)   # listings are set smaller than body text
         for i, line in enumerate(lines):
             if i:
                 run.add_break()

@@ -80,14 +80,15 @@ def _greedy(t):
 # ------------------------------------------------------------------ 5.2 ----
 
 def _alns(t, figures):
-    t.h2("Prilagodljivo pretraživanje velikih okolina (ALNS)", label="alns")
+    t.h2("Metaheuristika ALNS", label="alns")
 
-    t.p("Metoda kojom se problem zapravo rješava je ",
-        i("Adaptive Large Neighborhood Search"),
-        ", koju za problem preuzimanja i dostave s vremenskim prozorima uvode "
-        "{~ropke2006}. U nastavku se opisuje njezina prilagodba problemu SS-IMER, a mjesta "
-        "na kojima izvedba svjesno odstupa od izvorne metode navedena su na kraju "
-        "odjeljka ", t.sec("prihvacanje"), ".")
+    t.p("Metoda kojom se problem zapravo rješava je prilagodljivo pretraživanje velikih "
+        "okolina, u literaturi poznato pod engleskim nazivom ",
+        i("Adaptive Large Neighborhood Search"), " i kraticom ALNS, koju za problem "
+        "preuzimanja i dostave s vremenskim prozorima uvode {~ropke2006}. Naziv se ne "
+        "prevodi, pa se u nastavku koristi kratica. Opisuje se prilagodba metode problemu "
+        "SS-IMER, a mjesta na kojima izvedba svjesno odstupa od izvorne navedena su uz "
+        "svaki dio na koji se odnose.")
 
     _arhitektura(t, figures)
     _razaranje(t)
@@ -99,7 +100,7 @@ def _alns(t, figures):
 def _arhitektura(t, figures):
     t.h3("Arhitektura i adaptivne težine")
 
-    t.p("Polazna je ideja pretraživanja velikih okolina jednostavna. Umjesto da se rješenje "
+    t.p("Polazna je ideja jednostavna. Umjesto da se rješenje "
         "gradi element po element, ono se u svakoj iteraciji djelomično ", i("razori"),
         " i zatim ", i("popravi"), ": iz trenutačnog reza ", v("D"), " ukloni se ", v("q"),
         " bridova, koji se time vraćaju u mrežu, pa se rez nadopuni s ", v("q"),
@@ -110,8 +111,7 @@ def _arhitektura(t, figures):
         "međukorak bude poboljšanje. To je prepreka koju pohlepni postupak strukturno ne "
         "može svladati.")
 
-    t.p("Pridjev ", i("prilagodljivo"),
-        " odnosi se na sloj iznad te petlje. Umjesto jednog postupka razaranja i jednog "
+    t.p("Prilagodljivom je metodu čini sloj iznad te petlje. Umjesto jednog postupka razaranja i jednog "
         "postupka popravljanja na raspolaganju ih je više, a onaj koji će se u iteraciji "
         "upotrijebiti bira se slučajno, s vjerojatnošću razmjernom težini {ropke2006}:")
 
@@ -122,7 +122,7 @@ def _arhitektura(t, figures):
     t.p("Postupak razaranja i postupak popravljanja biraju se neovisno jedan o drugome, kao "
         "dvije odvojene obitelji s vlastitim težinama {ropke2006}, a težine se ne zadaju "
         "unaprijed nego uče iz onoga što se tijekom pretraživanja dogodilo. ",
-        t.figref("alnsloop"), " prikazuje jednu iteraciju i tu petlju učenja.")
+        t.figref("alnsloop"), " prikazuje jednu iteraciju metode ALNS i tu petlju učenja.")
 
     t.figure(figures / "fig5_1_alns_loop.png",
              "Jedna iteracija metode ALNS. Tri se odluke donose neovisno, svaka vlastitim "
@@ -246,7 +246,7 @@ def _razaranje(t):
         ["Član kod Røpkea i Pisingera", "Težina", "Odgovarajuća veličina u SS-IMER-u"],
         [
             ["udaljenost mjesta preuzimanja i dostave", str(config.SHAW_PHI),
-             "dijele li dva brida početni, odnosno završni čvor"],
+             "broj koraka između početnih, odnosno između završnih čvorova dvaju bridova"],
             ["razlika u vremenu posluživanja", str(config.SHAW_CHI),
              "razlika u udaljenosti krajeva od izvora, mjerenoj brojem koraka"],
             ["razlika u količini tereta", str(config.SHAW_PSI),
@@ -260,15 +260,22 @@ def _razaranje(t):
         label="srodnost",
         widths_cm=[5.4, 1.8, 6.6])
 
-    t.p("Zadnji član zaslužuje objašnjenje jer je za ovaj problem najvažniji. Kod "
-        "{~ropke2006} on uspoređuje skupove vozila kojima se dva zahtjeva mogu poslužiti; "
-        "ovdje mu odgovara područje mreže u koje kaskada ulazi kroz brid, dakle skup "
-        "čvorova dohvatljivih iz njegova završnog čvora unutar ograničenog broja koraka. "
-        "Dva su brida srodna ako čuvaju isto područje. Bez tog člana mjera se izrođuje: "
-        "unutar jednog sloja svi bridovi izlaze iz istog čvora i vode do čvorova jednako "
-        "udaljenih od izvora, pa su prva dva člana ondje konstantna po konstrukciji, a "
-        "ostaje samo razlika u vjerojatnosti prijenosa, koja poprima svega deset vrijednosti "
-        "(odjeljak ", t.sec("izjednacenost"),
+    t.p("Prvi član zahtijeva pojašnjenje jer je prijenos ovdje najmanje očit. Kod "
+        "{~ropke2006} riječ je o zemljopisnoj udaljenosti dvaju mjesta, a čvorovi mreže "
+        "nemaju položaj u prostoru. Sam je graf, međutim, metrički prostor, pa ulogu "
+        "udaljenosti preuzima broj koraka između dvaju čvorova, mjeren bez obzira na smjer "
+        "bridova i normiran najvećom udaljenošću u mreži. Dva su brida time bliska ako su "
+        "im krajevi blizu u mreži, a ne samo ako ih dijele.")
+
+    t.p("Posljednji član za ovaj je problem najvažniji. Kod {~ropke2006} on uspoređuje "
+        "skupove vozila kojima se dva zahtjeva mogu poslužiti; ovdje mu odgovara područje "
+        "mreže u koje kaskada ulazi kroz brid, dakle skup čvorova dohvatljivih iz njegova "
+        "završnog čvora unutar ograničenog broja koraka, pa su dva brida srodna ako čuvaju "
+        "isto područje. Bez njega bi mjera unutar jednog sloja izgubila velik dio "
+        "razlučivosti: ondje svi bridovi izlaze iz istog čvora i vode do čvorova jednako "
+        "udaljenih od izvora, pa su vremenski član i polovica prvog člana konstantni po "
+        "konstrukciji, a vjerojatnost prijenosa poprima svega deset vrijednosti (odjeljak ",
+        t.sec("izjednacenost"),
         "). Ograničenje na malen broj koraka također nije proizvoljno: mreža ima jako "
         "povezanu komponentu koja obuhvaća većinu čvorova (odjeljak ", t.sec("komponente"),
         "), pa bi neograničeni skup potomaka za gotovo svaki čvor bio gotovo cijela mreža i "
@@ -409,30 +416,9 @@ def _prihvacanje(t):
         v("q"), " se zato bilježi uz svaki rezultat, kako se ponašanje pri takvim "
         "proračunima ne bi tumačilo kao ponašanje metode općenito.")
 
-    t.p("Time je opis metode potpun. ", t.tabref("odstupanja"),
-        " objedinjuje mjesta na kojima izvedba svjesno odstupa od izvorne metode; u svemu "
-        "ostalome slijedi je doslovno.")
-
-    t.table(
-        ["Odstupanje", "Razlog"],
-        [
-            ["kotač slojeva udaljenosti",
-             "izvorna metoda nema pojam ograničenog skupa kandidata; dodatak je ovog rada, "
-             "bodovan njihovim pravilom"],
-            ["popravljanje koristi pristrani slučajni odabir",
-             "njihovi su operatori popravljanja deterministički, što bi kod naših "
-             "izjednačenih ocjena dalo uvijek isti rez"],
-            ["granice za q razmjerne proračunu",
-             "njihova donja granica od četiri elementa nije definirana za ovako male "
-             "proračune"],
-            ["faktor hlađenja izveden iz vlastitog proračuna iteracija",
-             "njihova je vrijednost ugođena za 25 000 iteracija"],
-            ["razaranje najlošijih rangira jednom",
-             "doslovno rangiranje pri svakom izboru zahtijeva ponovni prolaz kroz sve "
-             "realizacije i višestruko poskupljuje pokretanje"],
-            ["šum u funkciji cilja nije prenesen",
-             "definiran je preko matrice udaljenosti, čega ovdje nema"],
-        ],
-        "Svjesna odstupanja izvedbe od metode {ropke2006}.",
-        label="odstupanja",
-        widths_cm=[5.6, 8.2])
+    t.p("Time je opis metode potpun. Uz odstupanja navedena uz pojedine dijelove — kotač "
+        "slojeva, koji u izvornoj metodi nema pandana, pristrani odabir pri popravljanju, "
+        "granice za ", v("q"), " i faktor hlađenja — razlikuje se još samo razaranje "
+        "najlošijih, koje kandidate rangira jednom umjesto pri svakom izboru, jer bi "
+        "doslovno rangiranje tražilo ponovni prolaz kroz sve realizacije po svakom "
+        "odabranom bridu. U svemu ostalome izvedba slijedi izvornu metodu doslovno.")

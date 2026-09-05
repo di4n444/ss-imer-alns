@@ -46,7 +46,7 @@ def write(t, figures):
         "usmjerenost jednaka za sve kriterije, pa nijedan dio sustava ne mora znati u kojem "
         "smjeru pojedini kriterij raste. Isti se kriteriji koriste na dva mjesta: kao "
         "samostalne pohlepne metode iz odjeljka ", t.sec("pohlepne"),
-        " i kao operatori popravljanja unutar metaheuristike iz odjeljka ", t.sec("alns"),
+        " i kao operatori popravljanja unutar metaheuristike ALNS iz odjeljka ", t.sec("alns"),
         ". Time se ono što se uspoređuje svodi na način pretraživanja, a ne na to što koja "
         "metoda smatra dobrim bridom.")
 
@@ -237,24 +237,23 @@ def _ties(t):
         "poprima na svih ", _int(len(EDGES)), " bridova mreže.")
 
     t.table(
-        ["Kriterij", "Što mjeri", "Razina", "Različitih vrijednosti"],
+        ["Kriterij", "Što mjeri", "Različitih vrijednosti"],
         [
-            ["slučajni", "ništa (kontrola)", "po pozivu", "praktički sve"],
-            ["vjerojatnost", "pouzdanost kanala", "globalno",
+            ["slučajni", "ništa (kontrola)", "praktički sve"],
+            ["vjerojatnost", "vjerojatnost prolaska kaskade bridom",
              _int(EDGES.probability.nunique())],
-            ["zbroj stupnjeva", "blizina čvorištima", "globalno",
+            ["zbroj stupnjeva", "zbroj izlaznih stupnjeva čvorova brida",
              _int(EDGES.degree_sum.nunique())],
-            ["lokalni most", "nepostojanje obilaznice", "globalno",
+            ["lokalni most", "povezuje li brid dva čvora koja nemaju zajedničke susjede",
              _int(EDGES.is_local_bridge.nunique())],
-            ["međupoloženost", "udio najkraćih putova iz izvora", "po izvoru",
-             "ovisi o izvoru"],
-            ["spektralni", "doprinos spektralnom polumjeru", "globalno",
+            ["međupoloženost", "udio najkraćih puteva iz izvora", "ovisi o izvoru"],
+            ["spektralni", "doprinos spektralnom polumjeru",
              _int(EDGES.spectral_score.nunique())],
         ],
         "Šest kriterija za odabir bridova i broj različitih vrijednosti koje poprimaju na "
         "mreži Bitcoin Alpha.",
         label="kriteriji",
-        widths_cm=[3.0, 5.2, 2.6, 3.4])
+        widths_cm=[3.2, 7.0, 3.6])
 
     t.p("Raspon je izrazit. Spektralni kriterij gotovo svakom bridu daje vlastitu "
         "vrijednost, dok lokalni most ima samo dvije, a vjerojatnost prijenosa točno deset, "

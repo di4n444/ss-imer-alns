@@ -33,6 +33,8 @@ class SourceContext:
     hop_of_node: dict    # node -> BFS hop from the source (R&P eq.17's time coordinate)
     edges_by_hop: dict   # hop -> [eid]
     hop_span: float      # max-min observed hop, for normalising relatedness
+    distance: object     # [a][b] -> hops between two nodes (R&P eq.17's d_ij)
+    distance_max: float  # largest entry, for normalising that term to [0,1]
     territory: list      # node -> bounded descendant set (R&P eq.17's servable set K_i)
 
 
@@ -101,6 +103,8 @@ def build_source_context(g, source: int, features) -> SourceContext:
     is_bridge = {eid: float(flag) for eid, flag in features["is_local_bridge"].items()}
     spectral = features["spectral_score"].to_dict()
 
+    distances = analyse_graph.node_distances(g)
+
     hops = hop_of_edge.values()
     hop_span = float(max(hops) - min(hops)) if hops else 0.0
 
@@ -117,6 +121,10 @@ def build_source_context(g, source: int, features) -> SourceContext:
         hop_of_node=hop_of_node,
         edges_by_hop=sf["edges_by_hop"],
         hop_span=hop_span,
+        # Source-independent and cached inside analyse_graph, so asking for it per
+        # source costs a dict lookup after the first call.
+        distance=distances,
+        distance_max=float(distances.max()),
         # Source-independent, so rebuilding it per source is redundant work — but it
         # measures 0.23 s against ~45 s for one ALNS run, and keeping SourceContext
         # self-constructing is worth more than saving that. Hoist it to the caller only

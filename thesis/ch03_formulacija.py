@@ -203,11 +203,20 @@ def _slozenost(t, figures):
         i("početnim skupovima"), " {kempe2003}, a to se svojstvo ne prenosi na doseg "
         "promatran nad ", i("skupovima uklonjenih bridova"), ".")
 
-    t.p("Razlog je topološka redundantnost, koju ", t.figref("choke"),
-        " prikazuje na najmanjem primjeru. Iz izvora vode dva neovisna brida prema istoj "
-        "gusto povezanoj regiji: uklanjanje bilo kojega od njih smanjuje doseg s osam na "
-        "sedam čvorova, dakle gotovo ništa, jer kaskada nastavlja teći onim drugim, dok "
-        "uklanjanje obaju izvor potpuno izolira. Doprinos drugog brida time je ", i("veći"),
+    t.p("Razlog je topološka redundantnost, koju najmanji primjer pokazuje izravno. U "
+        "mreži na ", t.figref("choke_base"),
+        " iz izvora vode dva neovisna puta prema istoj gusto povezanoj regiji, a doseg "
+        "obuhvaća svih osam čvorova.")
+
+    t.figure(figures / "fig3_base_choke.png",
+             "Izvor je dvama neovisnim putovima povezan s gusto povezanom regijom. "
+             "Ispunjeni su čvorovi oni dohvatljivi iz izvora.",
+             label="choke_base")
+
+    t.p("Ukloni li se jedan od tih dvaju bridova, kao na ", t.figref("choke_near"),
+        ", doseg pada s osam na sedam čvorova, dakle gotovo ništa, jer kaskada nastavlja "
+        "teći onim drugim. Tek uklanjanje obaju, pri proračunu ", v("k"),
+        " = 2, izvor potpuno izolira. Doprinos drugog brida time je ", i("veći"),
         " kada je prvi već uklonjen, dok submodularnost zahtijeva upravo suprotno. "
         "Pohlepni postupak, koji bridove bira jedan po jedan i svakog vrednuje zasebno, "
         "takvu sinergiju ne može uočiti: pojedinačno oba brida izgledaju bezvrijedno, a "
@@ -215,18 +224,20 @@ def _slozenost(t, figures):
         "{~tong2012} napominju da učinak uklanjanja skupa bridova nije jednak zbroju "
         "učinaka uklanjanja pojedinih bridova.")
 
-    t.p("Isti primjer pokazuje i drugu posljedicu redundantnosti. Ako se putovi nizvodno "
-        "ponovno spajaju, jedan jedini brid u tom uskom grlu pri istom proračunu smanjuje "
-        "doseg s osam na četiri, dakle znatno više od bilo kojeg brida uz sam izvor. "
-        "Najbolji rez, drugim riječima, ne mora ležati uz izvor.")
+    t.figure(figures / "fig3_near_choke.png",
+             "Uklonjen je jedan brid uz izvor, uz proračun k = 1. Doseg se smanjuje za "
+             "jedan čvor jer kaskada i dalje teče drugim putom.",
+             label="choke_near")
 
-    t.figure(figures / "fig3_1_choke_point.png",
-             "Redundantnost i zajedničko usko grlo. Izvor je dvama neovisnim putovima "
-             "povezan s gusto povezanom regijom, pa uklanjanje jednoga brida uz izvor "
-             "doseg gotovo ne mijenja (sredina), dok uklanjanje jednoga brida u uskom "
-             "grlu, uz jednak proračun, odsijeca cijelu regiju (desno). Ispunjeni su "
-             "čvorovi oni dohvatljivi iz izvora.",
-             label="choke")
+    t.p("Ista mreža pokazuje i drugu posljedicu redundantnosti. Putovi se nizvodno ponovno "
+        "spajaju, pa jedan jedini brid u tom uskom grlu, uz jednak proračun, smanjuje doseg "
+        "s osam na četiri, kako prikazuje ", t.figref("choke_grlo"),
+        ". Najbolji rez, drugim riječima, ne mora ležati uz izvor.")
+
+    t.figure(figures / "fig3_choke_choke.png",
+             "Uklonjen je jedan brid u uskom grlu, uz isti proračun k = 1. Cijela gusto "
+             "povezana regija time postaje nedohvatljiva.",
+             label="choke_grlo")
 
     t.p("Iz oba svojstva slijedi zahtjev na metodu rješavanja: potreban je postupak koji u "
         "jednom koraku mijenja više bridova odjednom i koji nije unaprijed ograničen na "

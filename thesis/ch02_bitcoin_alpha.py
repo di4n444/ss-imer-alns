@@ -288,16 +288,23 @@ def _sources(t, figures, profile):
         sub(v("σ"), up("0")), " ≥ 400, iznosi ",
         _n(100 * (usable.sigma0_saa >= 400).mean(), 1), " %.")
 
-    t.p("Bitno je da između tih dviju skupina nema jasnog reza. Doseg se mijenja "
-        "postupno kroz cijeli raspon, kako pokazuje ", t.figref("population"),
-        ". Izlazni stupanj snažno predviđa doseg, ali ne i potpuno: među čvorovima s "
-        "najviše devet izlaznih bridova ima i onih koji dosežu jezgru. Upravo su takvi "
-        "izvori zanimljivi za drugu razinu istraživačkog pitanja, jer kod njih malen broj "
-        "veza vodi prema velikoj komponenti, pa se učinkovit rez ne mora nalaziti uz sam "
-        "izvor. Obje veličine zato ulaze u raspored uzorkovanja izvora opisan u "
-        "odjeljku ", t.sec("uzorak"), ".")
+    t.p("Bitno je da između tih dviju skupina nema jasnog reza: doseg se mijenja postupno "
+        "kroz cijeli raspon, kako pokazuje ", t.figref("population"), ".")
 
-    t.figure(figures / "fig2_4_source_population.png",
-             "Populacija mogućih izvora: kumulativna raspodjela očekivanog dosega "
-             "(lijevo) i sastav pojasa izlaznog stupnja s obzirom na doseg (desno).",
+    t.figure(figures / "fig2_4_source_reach.png",
+             "Kumulativna raspodjela očekivanog dosega po izvorima. Krivulja nema stubu "
+             "koja bi razdvajala dvije skupine, nego raste postupno.",
              label="population")
+
+    t.p("Izlazni stupanj snažno predviđa doseg, ali ne i potpuno, što prikazuje ",
+        t.figref("outdeg"),
+        ": među čvorovima s najviše devet izlaznih bridova ima i onih koji dosežu jezgru. "
+        "Upravo su takvi izvori zanimljivi za drugu razinu istraživačkog pitanja, jer kod "
+        "njih malen broj veza vodi prema velikoj komponenti, pa se učinkovit rez ne mora "
+        "nalaziti uz sam izvor. Obje veličine zato ulaze u raspored uzorkovanja izvora "
+        "opisan u odjeljku ", t.sec("uzorak"), ".")
+
+    t.figure(figures / "fig2_5_source_outdegree.png",
+             "Sastav pojaseva izlaznog stupnja s obzirom na doseg. Prvi pojas ne može biti "
+             "izvor ni za najmanji razmatrani proračun.",
+             label="outdeg")

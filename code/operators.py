@@ -73,10 +73,12 @@ def _relatedness(a: int, b: int, ctx) -> float:
     A "request" here is an edge e=(u,v); its two locations A/B are the tail and the head.
 
     - phi   R&P use normalised road distance between the two pickups and between the two
-            deliveries. Our nodes carry no metric, so this degenerates to co-location:
-            0 when the two edges share the endpoint, 1 otherwise. Within one hop layer
-            every tail is the source, so this term is constant there by construction —
-            correctly so, those edges genuinely do start in the same place.
+            deliveries. Our nodes carry no coordinates, but the graph is itself a metric
+            space, so the number of hops between two nodes stands in for it
+            (analyse_graph.node_distances), normalised by the largest distance in the
+            graph. Within one hop layer every tail is the source, so the tail half is
+            0 there by construction - correctly, those edges do start in the same place -
+            and the term's variation comes from how far apart the two *heads* sit.
     - chi   R&P's T_i is when location i is visited. Under IC the earliest a node can be
             reached is its BFS hop from s, so hop distance *is* our time coordinate.
             Both endpoints enter, matching their sum over pickup and delivery.
@@ -102,7 +104,8 @@ def _relatedness(a: int, b: int, ctx) -> float:
     ub, vb = ctx.endpoints[b]
     hop, span = ctx.hop_of_node, ctx.hop_span
 
-    location = (0.0 if ua == ub else 1.0) + (0.0 if va == vb else 1.0)
+    distance, longest = ctx.distance, ctx.distance_max
+    location = (distance[ua][ub] + distance[va][vb]) / longest if longest else 0.0
     if span > 0:
         time = (abs(hop[ua] - hop[ub]) + abs(hop[va] - hop[vb])) / span
     else:
