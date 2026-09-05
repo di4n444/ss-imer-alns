@@ -50,6 +50,23 @@ cd ss-imer-alns/thesis
 ../.venv/bin/python build_thesis.py         # -> "... - nacrt.docx" beside the original
 ```
 
+### Which file to edit
+
+`build_thesis.py` **reads** `Optimizacija protoka informacije u grafovima.docx` and
+**writes** `Optimizacija protoka informacije u grafovima - nacrt.docx`. The original is
+never modified.
+
+The nacrt is regenerated from scratch on every build, so:
+
+- **Chapter text** is edited in `thesis/ch0*.py`, never in the nacrt — an edit there is
+  lost on the next build.
+- **Front and back matter** (title page, Sažetak, Summary, the table-of-contents field,
+  the AI-usage statement) is carried over from the original untouched, so fill those in
+  **in the original** and they flow into every future build.
+- The bibliography is regenerated from `thesis/bibliography.py`.
+- Once the text is final and the build is retired, the nacrt can be edited directly in
+  Word like any document.
+
 Tests and the calibration compete for CPU; do not run them at the same time, since the
 calibration enforces a wall-clock budget and would truncate.
 
