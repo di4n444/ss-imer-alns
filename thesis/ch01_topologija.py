@@ -48,12 +48,6 @@ def _uvod(t):
         "jer omogućuje predviđanje i, što je za ovaj rad ključno, upravljanje širenjem "
         "informacije ili zaraze.")
 
-    t.p("Optimizacija na mrežama zbog toga ima široku primjenu. U istraživačkim se "
-        "radovima koristi za analizu društvenih i političkih kaskada, primjerice za "
-        "kontrolu manipulacije izbornim ishodima {castiglioni2021}, za unapređenje sustava preporuka na "
-        "društvenim mrežama {coro2021}, pa i u ekologiji, kroz metapopulacijsko modeliranje za "
-        "strateško povezivanje ugroženih staništa {sheldon2010}.")
-
     t.p("U ovom se radu razmatra minimizacija utjecaja ciljanim uklanjanjem bridova. "
         "{~castiglioni2021} taj problem definiraju pod nazivom ",
         i("Influence-Minimization-by-Edge-Removal"), " (IMER): za zadani graf, skup "

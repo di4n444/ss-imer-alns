@@ -282,22 +282,15 @@ def _scope(t, results):
     cells = comparison_cells(results)
     everywhere = cells[[f"greedy_{c}" for c in CRITERIA] + ["alns"]].min(axis=1) > 0.9
 
-    t.p("Dosegu ove usporedbe treba jasno odrediti granice. Šest pohlepnih kriterija "
-        "obuhvaća, i nadmašuje, skup slabih usporednih metoda koje su objavili ",
-        "{~kimura2008} — međupoloženost, izlazni stupanj i slučajni odabir. Metoda koju su "
-        "sami ", i("predložili"),
+    t.p("Dosegu ove usporedbe treba jasno odrediti granice. Tri od šest pohlepnih "
+        "kriterija odgovaraju po zamisli slabim usporednim metodama koje koristi ",
+        "{~kimura2008}, uz razlike u izvedbi navedene u odjeljku ", t.sec("pohlepne"),
+        ". Metoda koju su sami ", i("predložili"),
         ", pohlepno pretraživanje po izmjerenom dosegu s ponovnim vrednovanjem u svakom "
         "koraku, u ovoj usporedbi ne sudjeluje. Rezultati stoga odgovaraju na pitanje "
         "nadmašuje li prilagodljivo pretraživanje nepromjenjiv topološki kriterij, a ne "
         "nadmašuje li najbolju poznatu metodu; osmo poglavlje objašnjava zašto se ta "
         "metoda ovdje nije mogla izravno preuzeti.")
-
-    t.p("Uz to, međupoloženost se ovdje računa jednokratno, nad statičkom mjerom "
-        "ukorijenjenom u izvoru, dok je izvorna inačica ponovno računa nakon svakoga "
-        "uklonjenog brida. Razlika je posljedica troškovnoga modela iz odjeljka ",
-        t.sec("arhitektura"),
-        ", koji ponovno računanje unutar petlje ne dopušta, ali je razlika stvarna i ne "
-        "treba je prešutjeti.")
 
     t.p("Naposljetku, dvije napomene o samom uzorku instanci. Instanci u kojima svaka "
         "metoda prelazi ", _n(0.9, 1), " ima ",

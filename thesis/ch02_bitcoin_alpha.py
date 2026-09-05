@@ -282,12 +282,19 @@ def _sources(t, figures, profile):
         "radu razmatra. Kao izvori za ", v("k"), " ≥ 3 preostaje ", _count(ok3, "čvor", "čvora", "čvorova"),
         ", odnosno ", _n(100 * ok3 / len(profile), 1), " % mreže.")
 
+    eligible = profile[profile.out_degree >= 4]
     t.p("Očekivani doseg praznog reza, ", sub(v("σ"), up("0")), ", mjeren je za svaki "
-        "čvor. Raspon je vrlo širok: medijan iznosi ", _n(usable.sigma0_saa.median(), 1),
-        ", dok deveti decil iznosi ", _n(usable.sigma0_saa.quantile(0.9), 1),
-        ". Udio izvora koji dosežu jako povezanu jezgru, ovdje definiranih kao oni s ",
+        "čvor. Promatraju li se svi čvorovi koji uopće mogu pokrenuti kaskadu, dakle oni "
+        "s barem jednim izlaznim bridom, raspon je vrlo širok: medijan iznosi ",
+        _n(usable.sigma0_saa.median(), 1), ", deveti decil ",
+        _n(usable.sigma0_saa.quantile(0.9), 1),
+        ", a udio onih koji dosežu jako povezanu jezgru, ovdje definiranih kao oni s ",
         sub(v("σ"), up("0")), " ≥ 400, iznosi ",
-        _n(100 * (usable.sigma0_saa >= 400).mean(), 1), " %.")
+        _n(100 * (usable.sigma0_saa >= 400).mean(), 1),
+        " %. Među čvorovima koji mogu biti izvor u ovom radu doseg je osjetno veći — "
+        "medijan ", _n(eligible.sigma0_saa.median(), 1), " i ",
+        _n(100 * (eligible.sigma0_saa >= 400).mean(), 1),
+        " % zasićenih — jer izlazni stupanj i doseg rastu zajedno.")
 
     t.p("Bitno je da između tih dviju skupina nema jasnog reza: doseg se mijenja postupno "
         "kroz cijeli raspon, kako pokazuje ", t.figref("population"), ".")

@@ -122,6 +122,18 @@ def _degree(t):
         "se uklanjanjem samog čvorišta uklanjaju svi odjednom. Kriterij je zadržan zato što "
         "je uvriježen i što je očekivanje da će podbaciti provjerljiva tvrdnja.")
 
+    t.p("Za istu zamisao {~kimura2008} koriste ", i("umnožak"),
+        " izlaznih stupnjeva, pa vrijedi obrazložiti zbroj. Umnožak je nula čim završni "
+        "čvor nema nijedan izlazni brid, zbog čega takav brid pada na dno poretka bez "
+        "obzira na to koliko je razgranat njegov početni čvor; ovdje se, međutim, broje "
+        "svi dosegnuti čvorovi, pa i onaj koji dalje ne širi ništa, i presijecanje takva "
+        "brida uklanja jedan čvor iz dosega. Umnožak k tome izjednačuje brid između "
+        "čvorova stupnjeva 100 i 1 s bridom između dvaju čvorova stupnja 10, iako prvi "
+        "dodiruje pravo čvorište, a kriterij bi upravo blizinu čvorištu trebao izraziti. "
+        "Razlika slijedi iz razlike u cilju: ondje se doseg usrednjava preko svih čvorova "
+        "kao mogućih izvora, pa je važno i ono što završni čvor širi dalje, dok je ovdje "
+        "izvor jedan i unaprijed zadan, a svaki dosegnut čvor vrijedi jednako.")
+
 
 # ------------------------------------------------------------------ 4.4 ----
 
@@ -182,7 +194,7 @@ def _betweenness(t):
         "izračunati zasebno za svaki izvor, jer o izvoru ovisi po definiciji.")
 
     t.p("Vrijedi navesti jednu razliku u odnosu na {~kimura2008}, koji međupoloženost "
-        "također koristi kao usporednu metodu: on je nakon svakog uklonjenog brida ponovno "
+        "također koriste kao usporednu metodu: oni je nakon svakog uklonjenog brida ponovno "
         "izračunava na izmijenjenoj mreži, dok se ovdje računa jednom i tijekom "
         "pretraživanja ne obnavlja, jer bi ponovni izračun unutar petlje bio nerazmjerno "
         "skup (odjeljak ", t.sec("arhitektura"),
@@ -246,7 +258,7 @@ def _ties(t):
              _int(EDGES.degree_sum.nunique())],
             ["lokalni most", "povezuje li brid dva čvora koja nemaju zajedničke susjede",
              _int(EDGES.is_local_bridge.nunique())],
-            ["međupoloženost", "udio najkraćih puteva iz izvora", "ovisi o izvoru"],
+            ["međupoloženost", "udio najkraćih putova iz izvora", "ovisi o izvoru"],
             ["spektralni", "doprinos spektralnom polumjeru",
              _int(EDGES.spectral_score.nunique())],
         ],

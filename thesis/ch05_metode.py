@@ -63,10 +63,12 @@ def _greedy(t):
         "isti, pa se pohlepna rješenja računaju jednom i koriste za sve pokrete "
         "metaheuristike.")
 
-    t.p("Pri tumačenju rezultata važno je znati što ovih šest metoda jest, a što nije. To "
-        "su upravo one metode koje {~kimura2008} koriste kao ", i("usporedne"),
-        " — međupoloženost, izlazni stupanj i slučajni odabir — ovdje proširene "
-        "vjerojatnošću prijenosa, lokalnim mostom i spektralnim kriterijem. Metoda koju oni "
+    t.p("Pri tumačenju rezultata važno je znati što ovih šest metoda jest, a što nije. "
+        "Tri su od njih preuzete po zamisli od onih koje {~kimura2008} koriste kao ",
+        i("usporedne"),
+        " — međupoloženost, izlazni stupanj i slučajni odabir — uz razlike u izvedbi "
+        "obrazložene u četvrtom poglavlju, a preostala su tri dodana u ovom radu. Metoda "
+        "koju oni "
         "sami predlažu bitno je drukčija: u svakom koraku bira brid koji ", i("izmjerena"),
         " procjena dosega najviše smanjuje, i to na mreži iz koje su prethodno odabrani "
         "bridovi već uklonjeni. Usporedba u ovom radu stoga odgovara na pitanje može li "

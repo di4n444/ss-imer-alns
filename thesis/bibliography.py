@@ -29,11 +29,9 @@ SOURCES = [
     ("clauset2009", "Clauset i sur.", 2009),
     ("antulov2008", "Antulov-Fantulin", 2008),
     ("castellano2010", "Castellano i Pastor-Satorras", 2010),
-    ("sheldon2010", "Sheldon i sur.", 2010),
     ("tong2012", "Tong i sur.", 2012),
     ("kumar2016", "Kumar i sur.", 2016),
     ("kumar2018", "Kumar i sur.", 2018),
-    ("coro2021", "Coró i sur.", 2021),
     ("castiglioni2021", "Castiglioni i sur.", 2021),
     ("predavanja", "Predavanja, Kompleksne mreže", None),
 ]
@@ -89,7 +87,7 @@ def expand(text: str) -> str:
 # Full bibliography entries, in the faculty template's citation format.
 ENTRIES = {
     "erdos1960":
-        "Erdős, P., Rényi, A. On the Evolution of Random Graphs. Publicationes Mathematicae Debrecen, vol. 6, 1960.",
+        "Erdős, P., Rényi, A. On the Evolution of Random Graphs. Publicationes Mathematicae Instituti Hungaricae Academiae Scientiarum, vol. 5, 1960., str. 17-61.",
     "granovetter1973":
         "Granovetter, M. S. The Strength of Weak Ties. American Journal of Sociology, vol. 78, br. 6, 1973.",
     "valiant1979":
@@ -115,25 +113,21 @@ ENTRIES = {
     "ropke2006":
         "Røpke, S., Pisinger, D. An Adaptive Large Neighborhood Search Heuristic for the Pickup and Delivery Problem with Time Windows. Transportation Science, vol. 40, br. 4, 2006.",
     "kimura2008":
-        "Kimura, M., Saito, K., Nakano, R., Motoda, H. On the Contamination Minimization Problem in Social Networks. U: Proceedings of the 2008 Joint Conference on Information Sciences, 2008.",
+        "Kimura, M., Saito, K., Motoda, H. Minimizing the Spread of Contamination by Blocking Links in a Network. U: Proceedings of the 23rd AAAI Conference on Artificial Intelligence (AAAI-08), 2008., str. 1175-1180.",
     "clauset2009":
         "Clauset, A., Shalizi, C. R., Newman, M. E. J. Power-Law Distributions in Empirical Data. SIAM Review, vol. 51, br. 4, 2009.",
     "antulov2008":
         "Antulov-Fantulin, N. Utjecaj zaraze na svojstva kompleksne mreže. Završni rad br. 243. Zagreb: Fakultet elektrotehnike i računarstva, Sveučilište u Zagrebu, 2008.",
     "castellano2010":
         "Castellano, C., Pastor-Satorras, R. Thresholds for Epidemic Spreading in Networks. Physical Review Letters, vol. 105, br. 21, 2010.",
-    "sheldon2010":
-        "Sheldon, D., Dilkina, B., Elmachtoub, A., Finseth, R., Sabharwal, A., Conrad, J., Gomes, C., Shmoys, D., Phillips, A. Maximizing the Spread of Cascades Using Network Design. U: Proceedings of the 26th Conference on Uncertainty in Artificial Intelligence (UAI), 2010.",
     "tong2012":
-        "Tong, H., Prakash, B. A., Eliassi-Rad, T., Faloutsos, M., Faloutsos, C. Gelling, and Melting, Large Graphs by Edge Manipulation. U: IEEE 12th International Conference on Data Mining, 2012.",
+        "Tong, H., Prakash, B. A., Eliassi-Rad, T., Faloutsos, M., Faloutsos, C. Gelling, and Melting, Large Graphs by Edge Manipulation. U: Proceedings of the 21st ACM International Conference on Information and Knowledge Management (CIKM), 2012.",
     "kumar2016":
         "Kumar, S., Spezzano, F., Subrahmanian, V. S., Faloutsos, C. Edge Weight Prediction in Weighted Signed Networks. U: IEEE International Conference on Data Mining (ICDM), 2016.",
     "kumar2018":
         "Kumar, S., Hooi, B., Makhija, D., Kumar, M., Subrahmanian, V. S., Faloutsos, C. REV2: Fraudulent User Prediction in Rating Platforms. U: 11th ACM International Conference on Web Search and Data Mining (WSDM), 2018.",
-    "coro2021":
-        "Coró, F., Castiglioni, M., Ferraioli, D., Gatti, N. Link Recommendation for Social Influence Maximization. U: Proceedings of the AAAI Conference on Artificial Intelligence, vol. 35, br. 6, 2021.",
     "castiglioni2021":
-        "Castiglioni, M., Ferraioli, D., Gatti, N. Election Manipulation on Social Networks: Seeding, Edge Removal, and Edge Addition. U: Proceedings of the AAAI Conference on Artificial Intelligence, vol. 35, br. 6, 2021.",
+        "Castiglioni, M., Ferraioli, D., Gatti, N., Landriani, G. Election Manipulation on Social Networks: Seeding, Edge Removal, Edge Addition. Journal of Artificial Intelligence Research, vol. 71, 2021., str. 1049-1090.",
     "predavanja":
         "Predavanja na kolegiju Kompleksne mreže. Fakultet elektrotehnike i računarstva, Sveučilište u Zagrebu, prezentacije.",
 }

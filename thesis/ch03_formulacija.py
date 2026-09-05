@@ -58,10 +58,11 @@ def _srodni(t):
         "je problem NP-težak, ali i da funkcija dosega nad početnim skupovima ima dva "
         "svojstva koja zajedno spašavaju situaciju: monotona je, jer dodavanje čvora u "
         "početni skup ne može smanjiti doseg, i submodularna, jer je doprinos novog čvora "
-        "to manji što je početni skup veći. Za takve funkcije pohlepni postupak daje "
-        "rješenje unutar faktora ", up("1 − 1/"), v("e"),
-        " od optimalnog {kempe2003}, zbog čega je taj pristup u ovom području postao "
-        "uobičajen.")
+        "to manji što je početni skup veći. Za takve funkcije poznato je iz teorije "
+        "submodularnih funkcija da pohlepni postupak daje rješenje unutar faktora ",
+        up("1 − 1/"), v("e"),
+        " od optimalnog; na taj se rezultat {~kempe2003} pozivaju kako bi opravdali "
+        "pohlepni pristup, koji je u ovom području potom postao uobičajen.")
 
     t.p("Zrcalni je problem sprječavanje širenja. Ono se može izvesti uklanjanjem čvorova, "
         "čime {~albert2000} pokazuju krhkost mreža bez skale, ili uklanjanjem bridova. "
@@ -220,9 +221,7 @@ def _slozenost(t, figures):
         " kada je prvi već uklonjen, dok submodularnost zahtijeva upravo suprotno. "
         "Pohlepni postupak, koji bridove bira jedan po jedan i svakog vrednuje zasebno, "
         "takvu sinergiju ne može uočiti: pojedinačno oba brida izgledaju bezvrijedno, a "
-        "vrijedna su tek zajedno. Do iste pojave dolazi i kod srodnog cilja, pa "
-        "{~tong2012} napominju da učinak uklanjanja skupa bridova nije jednak zbroju "
-        "učinaka uklanjanja pojedinih bridova.")
+        "vrijedna su tek zajedno.")
 
     t.figure(figures / "fig3_near_choke.png",
              "Uklonjen je jedan brid uz izvor, uz proračun k = 1. Doseg se smanjuje za "
