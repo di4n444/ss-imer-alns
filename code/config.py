@@ -111,3 +111,38 @@ ALNS_RUN_SEED = 7  # per-run RNG seed; experiments vary this deliberately (REPOR
 # cut ever used hop>=4 (hop0 in 31/40 cases, then 9/6/4 at hops 1/2/3). Keeping them in
 # only spends iterations on candidates that never win. Revisit in calibration.
 ALNS_MAX_HOP_SCOPE = 3
+
+# --- source sampling (PLAN.md Phase 2, PILOT_TESTS.md §35 B7) -------------
+#
+# B7's rule, learned the hard way: ONE sample, ONE seed, calibration disjoint from
+# measurement. The pilot audit found three different source samples in circulation and
+# could no longer say which numbers came from which. data/sample.csv is the only sample.
+
+SOURCE_SAMPLE_SEED = 20260904
+
+# A source needs out(s) > k or the instance is the trivial isolated case (REPORT.md §13),
+# so out-degree < 4 cannot support the smallest budget we study. That excludes 2088 of
+# 3272 eligible nodes - a fact about the graph that belongs in the thesis, not a
+# convenience filter.
+SAMPLE_MIN_OUT_DEGREE = 4
+
+# Stratification axes, measured rather than assumed (data/source_profile.csv, REPORT.md
+# §18): reach is a smooth heavy-tailed continuum, not the bimodal split we expected, and
+# out-degree predicts it strongly but not deterministically - which is exactly why both
+# axes are needed. PILOT_TESTS.md §1: stratify on reach, never on centrality alone.
+SAMPLE_OUT_DEGREE_BANDS = [(4, 10), (10, 20), (20, 50), (50, 10**9)]
+SAMPLE_SATURATED_SIGMA0 = 400.0  # above this a source reaches the giant live-edge component
+
+SAMPLE_CALIBRATION_PER_CELL = 2
+SAMPLE_MEASUREMENT_PER_CELL = 4
+
+# --- calibration (REPORT.md §10 - the process is itself thesis content) ---
+#
+# Hard wall-clock budget. Runtime scales with sigma_0 (REPORT.md §11), so a calibration
+# set's cost is decided by its reach composition, not its size: one saturated source costs
+# ~25 low-reach ones. The driver costs its plan against this before running anything.
+CALIBRATION_BUDGET_SECONDS = 1800
+
+# Measured fit to (sigma_0, seconds) = (41, 2), (74, 3.5), (643, 55) at 300 iterations.
+CALIBRATION_COST_PER_SIGMA0 = 0.088
+CALIBRATION_COST_INTERCEPT = -1.6

@@ -65,20 +65,33 @@ def _zeroed(names) -> dict:
     return {name: 0 for name in names}
 
 
-def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) -> dict:
+def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None,
+             max_iter: int = ALNS_MAX_ITER,
+             segment_length: int = ALNS_SEGMENT_LENGTH,
+             repair_p: float = ALNS_REPAIR_P,
+             q_min_frac: float = ALNS_Q_MIN_FRAC,
+             q_max_frac: float = ALNS_Q_MAX_FRAC,
+             reaction_factor: float = ALNS_REACTION_FACTOR,
+             max_hop_scope: int = ALNS_MAX_HOP_SCOPE) -> dict:
     """One ALNS search for a fixed (source, k).
 
     `ctx` is the SourceContext holding every precomputed per-source table; `evaluator`
     must be bound to the SAA scenario set, never the out-of-sample one (REPORT.md §7).
 
     `fixed_hop_scope` pins repair to a single hop layer instead of letting the scope
-    wheel choose. That is the Level-2 ablation the thesis needs — hop0-only versus
-    adaptive is how the claim gets tested rather than assumed (PLAN.md Phase 2).
+    wheel choose. Kept as a diagnostic knob; not part of the experiment matrix
+    (REPORT.md §16).
+
+    Every tunable parameter is a keyword argument defaulting to its config value, so a
+    calibration variant is an *override* rather than a separate code path, and the
+    resolved values come back in the result under `params` to be written into the same
+    CSV row as the numbers they produced (PILOT_TESTS.md §37). Nothing may reach into
+    config to change behaviour behind the caller's back.
     """
     rng = random.Random(seed)
     endpoints = ctx.endpoints
 
-    # Candidate layers, capped (config.ALNS_MAX_HOP_SCOPE). Each layer's edge list is
+    # Candidate layers, capped at `max_hop_scope`. Each layer's edge list is
     # static, so it is materialised once here and only the D-exclusion is per-iteration.
     if fixed_hop_scope is not None:
         if fixed_hop_scope not in ctx.edges_by_hop:
@@ -88,7 +101,7 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
             )
         scopes = [fixed_hop_scope]
     else:
-        scopes = sorted(h for h in ctx.edges_by_hop if h <= ALNS_MAX_HOP_SCOPE)
+        scopes = sorted(h for h in ctx.edges_by_hop if h <= max_hop_scope)
     layer_edges = {h: list(ctx.edges_by_hop[h]) for h in scopes}
     fallback_edges = [eid for h in scopes for eid in layer_edges[h]]
 
@@ -123,7 +136,7 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
     visited = {frozenset(current)}
 
     temperature = ALNS_START_TEMP_CONTROL * current_reach / math.log(2)  # R&P §3.5
-    cooling_rate = ALNS_FINAL_TEMP_FRACTION ** (1 / ALNS_MAX_ITER)
+    cooling_rate = ALNS_FINAL_TEMP_FRACTION ** (1 / max_iter)
 
     destroy_weights = {name: 1.0 for name in DESTROY_OPERATORS}
     repair_weights = {name: 1.0 for name in HEURISTICS}
@@ -138,8 +151,8 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
     # already noted this). Both are correct, but neither is "adaptive" in any strong
     # sense, so results at those budgets must be read with that in mind — hence q_min/q_max
     # are returned with the run rather than left implicit (PILOT_TESTS.md §37).
-    q_min = max(1, math.floor(ALNS_Q_MIN_FRAC * k))
-    q_max = max(q_min, min(k - 1, math.floor(ALNS_Q_MAX_FRAC * k)))
+    q_min = max(1, math.floor(q_min_frac * k))
+    q_max = max(q_min, min(k - 1, math.floor(q_max_frac * k)))
 
     # sigma1 attribution. PILOT_TESTS.md §23 is explicit that final weights alone do NOT
     # license the claim "ALNS learns which criterion to use" — that needs per-heuristic
@@ -171,7 +184,7 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
     stop_reason = "isolated" if best_reach <= 1.0 + 1e-9 else "max_iter"
     iteration = -1
 
-    while stop_reason != "isolated" and iteration + 1 < ALNS_MAX_ITER:
+    while stop_reason != "isolated" and iteration + 1 < max_iter:
         iteration += 1
         destroy_name = _roulette_select(destroy_weights, rng)
         repair_name = _roulette_select(repair_weights, rng)
@@ -187,10 +200,10 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
         # (small hop0, or most of it already cut) the remainder comes from the other
         # in-scope layers, so |D| = k always holds (PILOT_TESTS.md §10's fill rule).
         added = repair(repair_name, [e for e in layer_edges[scope] if e not in partial],
-                        wanted, ctx, rng, ALNS_REPAIR_P)
+                        wanted, ctx, rng, repair_p)
         if len(added) < wanted:
             spare = [e for e in fallback_edges if e not in partial and e not in added]
-            added |= repair(repair_name, spare, wanted - len(added), ctx, rng, ALNS_REPAIR_P)
+            added |= repair(repair_name, spare, wanted - len(added), ctx, rng, repair_p)
             fallback_used[scope] += 1
         candidate = partial | added
 
@@ -253,15 +266,15 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
 
         temperature *= cooling_rate
 
-        if (iteration + 1) % ALNS_SEGMENT_LENGTH == 0:
+        if (iteration + 1) % segment_length == 0:
             destroy_weights = _updated_weights(destroy_weights, destroy_scores,
-                                                destroy_counts, ALNS_REACTION_FACTOR)
+                                                destroy_counts, reaction_factor)
             repair_weights = _updated_weights(repair_weights, repair_scores,
-                                               repair_counts, ALNS_REACTION_FACTOR)
+                                               repair_counts, reaction_factor)
             scope_weights = _updated_weights(scope_weights, scope_scores,
-                                              scope_counts, ALNS_REACTION_FACTOR)
+                                              scope_counts, reaction_factor)
             trace.append({
-                "segment": (iteration + 1) // ALNS_SEGMENT_LENGTH,
+                "segment": (iteration + 1) // segment_length,
                 "best_reach": best_reach,
                 "destroy_weights": dict(destroy_weights),
                 "repair_weights": dict(repair_weights),
@@ -301,4 +314,17 @@ def run_alns(ctx, k: int, evaluator, seed: int, *, fixed_hop_scope: int = None) 
         "q_bounds": (q_min, q_max),
         "evaluations": len(visited),
         "trace": trace,
+        # Every resolved parameter travels with the numbers it produced, so a CSV row is
+        # self-describing and a variant can never be confused with a default
+        # (PILOT_TESTS.md §37).
+        "params": {
+            "max_iter": max_iter,
+            "segment_length": segment_length,
+            "repair_p": repair_p,
+            "q_min_frac": q_min_frac,
+            "q_max_frac": q_max_frac,
+            "reaction_factor": reaction_factor,
+            "max_hop_scope": max_hop_scope,
+            "fixed_hop_scope": fixed_hop_scope,
+        },
     }
