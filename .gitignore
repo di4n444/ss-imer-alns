@@ -2,3 +2,5 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# generated thesis draft (lives beside the source .docx, not in the repo)
