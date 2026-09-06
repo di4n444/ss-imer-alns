@@ -197,6 +197,7 @@ def _comparison(t, results):
 
     weakest = table.iloc[0]
     rival = table.iloc[-1]
+    gap = gap_summary(results)
     t.p("Metaheuristika nadmašuje svaki kriterij u prosjeku, ali raspon je velik i tek ga "
         "razdvajanje čini čitljivim. Naspram kriterija „", NAMES[weakest.criterion],
         "” prednost iznosi ", _signed(weakest.mean_delta),
@@ -204,8 +205,29 @@ def _comparison(t, results):
         NAMES[rival.criterion], "” pada na ", _signed(rival.mean_delta),
         ", uz omjer ", _int(rival.better), " prema ", _int(rival.worse),
         " u korist metaheuristike i ", _int(rival.tied),
-        " izjednačenih ishoda. Vjerojatnost prolaska je, dakle, jedini pravi suparnik; "
-        "ostalih pet kriterija metaheuristika nadmašuje uvjerljivo.")
+        " izjednačenih ishoda. Vjerojatnost prolaska je, dakle, jedini pravi suparnik.")
+
+    t.p("Tu prednost treba odmah staviti u mjerilo. Iznosi ", _signed(rival.mean_delta),
+        ", a medijan raskoraka iz odjeljka ", t.sec("valjanost"), " iznosi ",
+        _signed(gap["median"]),
+        " — dakle jednako. Po mjerilu koje je ondje postavljeno prosječna razlika naspram "
+        "vjerojatnosti prolaska nije presudna i ne smije se tako čitati. Tvrdnja se stoga "
+        "ne oslanja na nju, nego na dvoje što prosjek ne prenosi: na omjer pobjeda i "
+        "poraza, jer ", _int(rival.worse), " poraza u ", _int(oracle["cells"]),
+        " instanci nije slika izjednačenosti, i na razdvajanje koje slijedi, iz kojega se "
+        "vidi da prednost postoji ondje gdje pretraga uopće stigne raditi, a nestaje na "
+        "zasićenim izvorima.")
+
+    t.p("Vrijedi objasniti i zašto je vjerojatnost prolaska toliko jača od preostalih "
+        "topoloških kriterija. Cilj je prosjek po zamrznutim realizacijama, a brid je u "
+        "pojedinoj realizaciji prisutan upravo sa svojom vjerojatnošću. Brid najniže "
+        "vjerojatnosti, kojih je u ovoj mreži više od tri petine (odjeljak ",
+        t.sec("skup"),
+        "), u velikoj većini realizacija ionako ne postoji, pa ga uklanjanje ondje ne "
+        "mijenja ništa. Kriteriji koji vjerojatnost ne gledaju velik dio proračuna troše "
+        "upravo na takve bridove, dakle na kanale koji su u većini realizacija već "
+        "zatvoreni. Nije, dakle, riječ o tome da je vjerojatnost bolja mjera strukturne "
+        "važnosti, nego o tome da je jedina usklađena s veličinom koja se optimira.")
 
     t.p("Dva su ishoda bila predviđena prije mjerenja i oba se potvrđuju. ",
         "{~kimura2008} izvijestili su da blokiranje bridova između čvorova visokoga "

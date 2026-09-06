@@ -232,3 +232,11 @@ def _estimate(t):
         "). Ponavljanje svake instance s više sjemena pretvorilo bi svaki rezultat iz jedne "
         "vrijednosti u raspodjelu, što je za stohastičko pretraživanje primjereniji opis. "
         "Raspršenje bi se tada iskazalo kao svojstvo metode, a ne usrednjilo.")
+
+    t.p("Najšire ograničenje, međutim, nije ni sjeme ni uzorak realizacija, nego to što su "
+        "sva mjerenja izvedena na jednoj jedinoj mreži. Svojstva koja oblikuju rezultate — "
+        "deset različitih vrijednosti vjerojatnosti prijenosa, težak rep raspodjele "
+        "stupnjeva i jezgra koja obuhvaća većinu čvorova — svojstva su te mreže, pa se "
+        "nijedan ovdje izmjeren odnos ne smije bez provjere prenijeti na mreže drukčije "
+        "građe. Ponavljanje cijeloga postava na još nekoliko mreža, osobito na mreži s "
+        "kontinuiranim vjerojatnostima, prva je provjera koju bi trebalo provesti.")
