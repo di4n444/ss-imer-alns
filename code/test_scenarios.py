@@ -1,4 +1,4 @@
-"""Regression tests for the frozen live-edge scenario sets.
+"""Regression tests for the live-edge subgraph sets.
 
 Smoke tests that must pass before any measurement run. The property they defend: the
 SAA and MC sets are generated once and are immutable
@@ -60,7 +60,7 @@ def test_saa_and_mc_are_independent_draws(g, scenarios, ctx, evaluator):
     mc_head = create_subgraphs.generate_scenarios(g, 20, MC_SCENARIO_SEED)
     overlap = set(_fingerprint(mc_head)) & set(_fingerprint(scenarios))
     assert not overlap, f"{len(overlap)} MC scenarios are identical to SAA scenarios"
-    print(f"  MC (seed {MC_SCENARIO_SEED}, n={MC_SCENARIO_COUNT}) shares no realization "
+    print(f"  MC (seed {MC_SCENARIO_SEED}, n={MC_SCENARIO_COUNT}) shares no subgraph "
           f"with SAA (seed {SAA_SCENARIO_SEED})")
 
 
@@ -95,7 +95,7 @@ def test_a_full_search_does_not_mutate_the_source_context(g, scenarios, ctx, eva
 
 
 if __name__ == "__main__":
-    print("frozen scenario tests")
+    print("live-edge subgraph tests")
     graph = create_graph.build_graph()
     saa = create_subgraphs.build_saa_scenarios(graph)
     context = build_source_context(graph, SOURCE, heuristics.load_global_features())

@@ -316,21 +316,31 @@ def clear_body(document, from_heading: str, to_heading: str):
 
     Rewriting in place rather than starting a fresh document is deliberate: the template's
     styles, the table-of-contents field and the AI-usage statement all live in the
-    original file and would be lost by regenerating it from scratch."""
-    paragraphs = document.paragraphs
-    start = end = None
-    for i, p in enumerate(paragraphs):
-        if p.style.name == "Heading 1" and p.text.strip() == from_heading:
-            start = i
-        elif p.style.name == "Heading 1" and p.text.strip() == to_heading:
-            end = i
+    original file and would be lost by regenerating it from scratch.
+
+    Removal walks the body's own children rather than `document.paragraphs`, which lists
+    only `w:p` and silently skips `w:tbl`. Iterating paragraphs left every table behind:
+    numbered equations live in a two-cell table, so each rebuild stranded the previous
+    build's equations above the new body, and they accumulated from one draft to the next
+    (the 57pg source carries 29 of them)."""
+    start_el = end_el = None
+    for p in document.paragraphs:
+        if p.style.name != "Heading 1":
+            continue
+        title = p.text.strip()
+        if title == from_heading and start_el is None:
+            start_el = p._p
+        elif title == to_heading and start_el is not None:
+            end_el = p._p
             break
-    if start is None or end is None:
+    if start_el is None or end_el is None:
         raise ValueError(f"could not locate '{from_heading}' .. '{to_heading}' in the document")
 
     body = document.element.body
-    for p in paragraphs[start:end]:
-        body.remove(p._p)
+    children = list(body)
+    start, end = children.index(start_el), children.index(end_el)
+    for element in children[start:end]:
+        body.remove(element)
     return start, end
 
 

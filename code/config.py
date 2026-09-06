@@ -33,11 +33,15 @@ DUPLICATE_EDGE_POLICY = "latest"  # one of: "latest"
 ER_NULL_MODEL_SEED = 1
 LOUVAIN_RESTART_SEEDS = range(1, 21)  # best-of-20
 
-# --- create_subgraphs.py (frozen live-edge scenarios) --------------------
+# --- create_subgraphs.py (live-edge subgraphs) ---------------------------
 
-SAA_SCENARIO_COUNT = 500  # thesis Ch.4 "Fitness funkcija" text, already decided
+# The sample ("uzorak"): the objective function the search minimises is the mean
+# reach over these subgraphs. Thesis 3.4 defines it, 6.2 describes generation.
+SAA_SCENARIO_COUNT = 500
 SAA_SCENARIO_SEED = 42
-MC_SCENARIO_COUNT = 2000  # thesis Ch.4: "2000 neovisnih MC scenarija" for OOS validation
+# The independent set the search never sees; every reported result is measured
+# on it, out of sample ("izvan uzorka"). Thesis 3.4 and 6.2.
+MC_SCENARIO_COUNT = 2000
 MC_SCENARIO_SEED = 999  # must differ from SAA_SCENARIO_SEED - in-sample/OOS independence
 
 # --- operators.py: destroy-side determinism exponents (R&P 2006 tuned vector, §4.3.2 -

@@ -19,6 +19,7 @@ SOURCES = [
     ("albert2002", "Albert i Barabási", 2002),
     ("kleywegt2002", "Kleywegt i sur.", 2002),
     ("kempe2003", "Kempe i sur.", 2003),
+    ("wang2003", "Wang i sur.", 2003),
     ("ropke2006", "Røpke i Pisinger", 2006),
     ("leskovec2007", "Leskovec i sur.", 2007),
     ("sheldon2010", "Sheldon i sur.", 2010),
@@ -100,6 +101,8 @@ ENTRIES = {
         "Albert, R., Barabási, A.-L. Statistical mechanics of complex networks. Reviews of Modern Physics, vol. 74, br. 1, 2002.",
     "kempe2003":
         "Kempe, D., Kleinberg, J., Tardos, É. Maximizing the Spread of Influence through a Social Network. U: Proceedings of the ninth ACM SIGKDD international conference on Knowledge discovery and data mining, 2003.",
+    "wang2003":
+        "Wang, Y., Chakrabarti, D., Wang, C., Faloutsos, C. Epidemic Spreading in Real Networks: An Eigenvalue Viewpoint. U: Proceedings of the 22nd International Symposium on Reliable Distributed Systems (SRDS), 2003.",
     "ropke2006":
         "Røpke, S., Pisinger, D. An Adaptive Large Neighborhood Search Heuristic for the Pickup and Delivery Problem with Time Windows. Transportation Science, vol. 40, br. 4, 2006.",
     "kimura2008":
