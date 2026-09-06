@@ -397,29 +397,41 @@ The data to answer it has been sitting in `results.csv` since the measurement ru
 - Cuts containing a deeper edge score **−0.123** against the best hop0-only method, where
   hop0-only cuts score **+0.021**.
 
-**Do not report that as "deeper edges do not pay."** Stratifying by reach class and by
-budget share narrows nothing — deep cuts lose inside every stratum — but the cell list
-settles it another way. The worst of the 14 are *exactly* the cells §7b identified as
-starving at 300 iterations: source 96 at k = 10 and source 123 at k = 20 are the two probe
-cells that gained twentyfold and fiftyfold under a longer search, and source 3 at k = 42
-produced a cut with **no hop-0 edge at all** (`{1: 24, 2: 9, 3: 9}`), which is a search that
-never anchored rather than a strategy.
+Stratifying by reach class and by budget share narrows nothing — deep cuts lose inside every
+stratum. But the decisive test is not a stratification, it is **what happens to the hop mix
+when a starved cell is given more iterations**, and `results_scaled.csv` and the probe rows
+answer it directly:
 
-The two cells where a deeper edge appears in a cut that *did* converge both beat the best
-hop0-only method — source 201 at k = 9 (`{0: 8, 1: 1}`, **+0.098**) and source 359 at
-k = 10 (`{0: 9, 1: 1}`, +0.015). Source 201 is a real instance of the choke-point geometry
-that fig 3.1–3.3 draw by hand.
+| cell | at 300 iterations | given more |
+|---|---|---|
+| source 96, k = 10 | `{0:4, 1:3, 2:1, 3:2}`, R = 0.008 | `{0:10}`, R = **0.169** |
+| source 123, k = 20 | `{0:12, 2:4, 3:4}`, R = 0.009 | `{0:20}`, R = **0.487** |
+| source 13, k = 18 | 6 deep, R = 0.058 | 0 deep, R = **0.305** |
 
-So the honest answer is the one §4.2 predicted in advance: a negative finding here cannot
-separate "deeper edges are useless" from "deeper layers are too big to search", and the
-evidence points at the second. Write 7.5 that way — the finding is that **going deeper is
-mostly a symptom of a search in trouble, and in the two cells where it was a choice rather
-than a symptom it paid.**
+**The improving searches converged to pure hop 0.** Over the 43 scaled cells, the three that
+shed deep edges gained **+0.107** on average against **+0.009** for the forty that kept or
+gained them, and source 13 at k = 18 is the largest single gain in the whole scaled re-run.
 
-Never identified: a real source in Bitcoin Alpha matching the fig 3.1–3.3 scenario. The
-figures are hand-placed drawings. Source 201 at k = 9 is the candidate, and the cut itself
-is not stored — `results.csv` keeps only `hop_mix`, so recovering the actual edges means
-re-running that one cell.
+This is stronger than a correlation and it resolves most of what §4.2 warned about. A
+negative finding was supposed to be unable to separate "deeper edges are useless" from
+"deeper layers are too big to search". But these searches did not merely fail to find good
+deep edges — given time to compare, they **actively replaced deep edges with hop-0 ones**.
+An edge discarded on reconsideration was not unexplored; it was worse.
+
+**Correct the tempting positive reading.** Source 201 at k = 9 holds one hop-1 edge and beats
+every hop0-only method by +0.098, which looks like the choke-point geometry of fig 3.1–3.3
+appearing in real data. Its own scaled re-run at 900 iterations drops that edge and scores
+slightly *better* (0.742 → 0.752). It is the same pattern, milder. That leaves source 359 at
+k = 10 (+0.015, never re-run longer) as the only unrefuted positive, and +0.015 sits inside
+the noise floor of §7.1. **No hop > 0 edge on this graph has surviving evidence of having
+helped.**
+
+What still hedges the conclusion: `ALNS_MAX_HOP_SCOPE = 3`, so nothing past hop 3 was ever
+reachable; one seed; and the deep cells are concentrated in a few hub sources. Say all three.
+
+Never identified: a real source in Bitcoin Alpha matching the fig 3.1–3.3 scenario. Those
+figures are hand-placed drawings, and after the correction above there is no measured
+instance to replace them with — which is itself the honest thing for 7.5 to report.
 
 ### The headline margin sits at the noise floor — say so before a reader notices
 
