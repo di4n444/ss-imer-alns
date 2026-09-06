@@ -90,13 +90,9 @@ def _uvod(t):
     t.p("Adaptivno učenje ALNS-a ispituje se na dvije razine. Na prvoj razini algoritam "
         "raspolaže s više topoloških kriterija za odabir brida i dodjeljivanjem bodova uči "
         "koji je kriterij bolji procjenitelj u kojem slučaju. Na drugoj razini procjenjuje "
-        "se koliko daleko od izvora leže bridovi koje se isplati ukloniti. Intuitivno je "
-        "da treba presjeći što više bridova koji izravno izlaze iz izvora. Međutim, ako iz "
-        "izvora vodi više neovisnih bridova prema istoj dobro povezanoj komponenti mreže, "
-        "uklanjanje samo nekoliko njih neće bitno smanjiti doseg jer se kaskada i dalje "
-        "širi preostalim putovima. Ako se ti paralelni putovi spajaju u zajedničko usko "
-        "grlo tek nekoliko koraka dalje, isplativije je ukloniti taj dijeljeni brid nego "
-        "presijecati svaki od izlaznih bridova posebno.")
+        "se koliko daleko od izvora leže bridovi koje se isplati ukloniti — pitanje koje "
+        "nije trivijalno, jer najbolji rez, kako pokazuje treće poglavlje, ne mora ležati "
+        "uz sam izvor.")
 
     t.p("Rad je organiziran kako slijedi. Prvo se poglavlje bavi teorijskim osnovama "
         "topologije i dinamike kompleksnih mreža. Drugo poglavlje analizira mrežu Bitcoin "

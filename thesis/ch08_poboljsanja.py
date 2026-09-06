@@ -1,12 +1,13 @@
 """8. Mogućnosti poboljšanja i budući rad.
 
-Three sections, each one thing the measurement showed is worth doing next, and each tied
-to a source where one is needed: the sigma-greedy to Kimura et al. (2008) and to the lazy-greedy
-acceleration of Leskovec et al. (2007), and the estimate to the sample average
-approximation literature (Kleywegt et al., 2002).
+Four sections, each one thing the measurement showed is worth doing next, and each tied to
+a source where one is needed: the sigma-greedy to Kimura et al. (2008) and to the
+lazy-greedy acceleration of Leskovec et al. (2007), and the estimate to the sample average
+approximation literature (Kleywegt et al., 2002). 8.2 needs no source: it is an argument
+about this thesis's own design, drawn from what 7.2 measured.
 
 Section 5.1 promises this chapter will explain why the sigma-greedy was not built and how
-it could be, so 8.2 has to deliver exactly that.
+it could be, so 8.3 has to deliver exactly that.
 
 Numbers come from the same CSVs and the same helper functions chapter 7 uses; nothing is
 retyped. The chapter proposes work rather than reporting it, so it holds few numbers, and
@@ -55,13 +56,15 @@ def write(t, figures):
     scaled = pd.read_csv(data / "results_scaled.csv")
 
     t.h1("Mogućnosti poboljšanja i budući rad")
-    t.p("Mjerenje iz sedmog poglavlja pokazalo je gdje metoda radi dobro, ali i tri mjesta "
+    t.p("Mjerenje iz sedmog poglavlja pokazalo je gdje metoda radi dobro, ali i četiri mjesta "
         "na kojima je slabija nego što bi morala biti. Ovo poglavlje opisuje što bi se na "
         "svakome od njih moglo učiniti. Redoslijed prati koliko je pojedini zahvat "
-        "obećavajuć: prvi je izravno podržan izmjerenim podacima, drugi bi usporedbu učinio "
-        "strožom, a treći bi povećao pouzdanost svih iznesenih brojeva.")
+        "obećavajuć: prvi je izravno podržan izmjerenim podacima, drugi slijedi iz onoga što "
+        "je mjerenje otkrilo o samim kriterijima, treći bi usporedbu učinio strožom, a "
+        "četvrti bi povećao pouzdanost svih iznesenih brojeva.")
 
     _allocation(t, results, scaled)
+    _orthogonal(t)
     _sigma_greedy(t)
     _estimate(t)
 
@@ -126,6 +129,48 @@ def _allocation(t, results, scaled):
 
 
 # ------------------------------------------------------------------ 8.2 ----
+
+def _orthogonal(t):
+    t.h2("Kriteriji koji se natječu i kriteriji koji se nadopunjuju", label="okomito")
+
+    t.p("Odjeljak ", t.sec("usporedba"),
+        " pokazao je da vjerojatnost prolaska nadmašuje četiri strukturna kriterija "
+        "uvjerljivo, i da razlog nije u tome što bolje mjeri strukturu, nego u tome što je "
+        "jedina usklađena s veličinom koja se optimira. Iz toga slijedi zaključak o samom "
+        "postavu, a ne samo o ishodu: u istu su usporedbu stavljene dvije različite vrste "
+        "veličina. Strukturni kriteriji govore ", i("gdje"),
+        " u mreži brid leži, a vjerojatnost govori ", i("koliko je često"),
+        " taj kanal uopće otvoren. To nisu suparnici nego dvije dopune.")
+
+    t.p("Ta se pogreška najbolje vidi na veličini koju rad ", i("nije"),
+        " uvrstio među kriterije — udaljenosti brida od izvora. Da je i ona postala "
+        "kriterij, njezino bi pravilo glasilo „uzmi najbliže bridove”, što nije ocjena "
+        "nego pristranost, i kao operator popravljanja zavaravalo bi jednako kao što se "
+        "pokazalo s vjerojatnošću. Umjesto toga udaljenost je izdvojena u zasebnu dimenziju "
+        "s vlastitim kotačem sreće, okomitu na izbor kriterija (odjeljak ",
+        t.sec("slojevi_sec"),
+        "), pa svaki kriterij bira unutar sloja koji je već odabran. Vjerojatnost, po svemu "
+        "sudeći, pripada istoj kategoriji.")
+
+    t.p("Dva su načina da se to popravi. Prvi je ugraditi vjerojatnost u same strukturne "
+        "kriterije, umjesto da joj se prepusti zasebno mjesto: međupoloženost se može "
+        "računati na grafu čiji su bridovi otežani vjerojatnošću, a spektralni kriterij iz "
+        "matrice vjerojatnosti umjesto iz matrice susjedstva, koja je za procjenu režima "
+        "širenja ionako već izračunata (odjeljak ", t.sec("prag"),
+        "). Takav bi kriterij mjerio položaj u mreži kakvom je kaskada zaista vidi. Drugi "
+        "je način postupiti kao s udaljenošću i uvesti vjerojatnost kao još jednu okomitu "
+        "dimenziju izbora, čime bi svi kriteriji zadržali svoju ulogu, a vjerojatnost "
+        "prestala biti njihov suparnik.")
+
+    t.p("Općenitije, prije uvođenja nove heuristike vrijedi postaviti pitanje kojemu ovaj "
+        "rad nije posvetio dovoljno pažnje: natječe li se ona s postojećima, jer mjeri istu "
+        "vrstu svojstva pa na svakoj instanci najviše jedna može biti ispravna, ili ih "
+        "nadopunjuje, jer mjeri drugu dimenziju pa bi ih trebala oblikovati, a ne "
+        "zamijeniti. Ovdje je svih šest kriterija tretirano kao suparnike, a barem jedan to "
+        "nije.")
+
+
+# ------------------------------------------------------------------ 8.3 ----
 
 def _sigma_greedy(t):
     t.h2("Pohlepna metoda vođena izmjerenim dosegom", label="sigmapohlepna")
@@ -192,7 +237,7 @@ def _sigma_greedy(t):
         "primjenjivo.")
 
 
-# ------------------------------------------------------------------ 8.3 ----
+# ------------------------------------------------------------------ 8.4 ----
 
 def _estimate(t):
     t.h2("Pouzdanija procjena i višestruka sjemena", label="pouzdanost")

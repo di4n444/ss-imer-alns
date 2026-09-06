@@ -51,17 +51,15 @@ def _greedy(t):
 
     t.p("Njihov je skup kandidata ograničen na bridove koji izravno izlaze iz izvora. To "
         "nije slabljenje protivnika nego definicija onoga što one predstavljaju: lokalnu "
-        "karantenu, dakle najizravniji odgovor na pitanje kako ograničiti sumnjivog "
-        "korisnika. Fiksni kriterij na širem skupu kandidata birao bi bridove visoke ocjene "
-        "daleko od izvora, koji ne zatvaraju nijedan izlaz iz njega, pa je pitanje isplati "
-        "li se gledati dalje od izvora pitanje za metaheuristiku, a lokalna karantena "
-        "poštena nulta točka u odnosu na koju se odgovor mjeri.")
+        "karantenu, najizravniji odgovor na pitanje kako ograničiti sumnjivog korisnika. "
+        "Fiksni kriterij na širem skupu kandidata birao bi bridove visoke ocjene daleko od "
+        "izvora, koji ne zatvaraju nijedan izlaz iz njega, pa je pitanje isplati li se "
+        "gledati dalje pitanje za metaheuristiku, a ovakva karantena poštena nulta točka u "
+        "odnosu na koju se odgovor mjeri.")
 
-    t.p("Odabir je uz to potpuno determinističan: bridovi se sortiraju po ocjeni silazno, a "
-        "izjednačeni po identifikatorima krajeva (odjeljak ", t.sec("izjednacenost"),
-        "). Time jedna trojka izvora, proračuna i kriterija ima točno jedan odgovor, uvijek "
-        "isti, pa se pohlepna rješenja računaju jednom i koriste za sve pokrete "
-        "metaheuristike.")
+    t.p("Odabir je uz to potpuno determinističan, uz razrješavanje izjednačenih vrijednosti "
+        "opisano u odjeljku ", t.sec("izjednacenost"),
+        ", pa se pohlepna rješenja računaju jednom i koriste za sve pokrete metaheuristike.")
 
     t.p("Pri tumačenju rezultata važno je znati što ovih šest metoda jest, a što nije. "
         "Dva od njih odgovaraju po zamisli dvjema ", i("heuristikama"),

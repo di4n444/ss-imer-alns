@@ -65,10 +65,9 @@ def _srodni(t):
         "pohlepni pristup, koji je u ovom području potom postao uobičajen.")
 
     t.p("Zrcalni je problem sprječavanje širenja. Ono se može izvesti uklanjanjem čvorova, "
-        "čime {~albert2002} pokazuju krhkost mreža bez skale, ili uklanjanjem bridova. "
-        "Uklanjanje brida blaža je intervencija jer ne uklanja sudionika iz mreže nego "
-        "samo jedan kanal među dvama sudionicima {tong2012}, pa je u primjenama u kojima "
-        "su sudionici stvarni korisnici često i jedina izvediva.")
+        "čime {~albert2002} pokazuju krhkost mreža bez skale, ili uklanjanjem bridova "
+        "{tong2012}, koje je iz razloga navedenih u uvodu često i jedina izvediva "
+        "mogućnost.")
 
     t.p("Dva su takva problema izravni preteče ovoga rada. {~kimura2008} definiraju problem "
         "minimizacije kontaminacije, u kojem se minimizira prosječan doseg preko svih "
@@ -83,7 +82,10 @@ def _srodni(t):
     t.p("uklanjanjem točno ", v("k"), " bridova. {~castiglioni2021} definiraju problem ",
         i("Influence-Minimization-by-Edge-Removal"), " (IMER), u kojem se za zadani graf, "
         "zadani skup početnih čvorova i proračun ", v("B"), " traži skup od najviše ",
-        v("B"), " bridova koji maksimizira pad broja dosegnutih čvorova.")
+        v("B"), " bridova koji maksimizira pad broja dosegnutih čvorova. Njihov je "
+        "doprinos posve teorijski: za uklanjanje bridova dokazuju težinu problema, ali ne "
+        "predlažu algoritam niti provode mjerenja, pa eksperimentalna strana toga problema "
+        "ostaje otvorena.")
 
     t.p("Problem koji se ovdje rješava uža je varijanta te obitelji, određena trima "
         "odlukama: izvor je jedan jedini i unaprijed poznat, umjesto skupa početnih "
