@@ -381,6 +381,46 @@ Mean R: ALNS 0.650, probability 0.637, then a clear gap to degree at 0.440. The 
 has median +0.016. **Recompute all of this from the CSV rather than quoting these figures**
 — they are here to say what shape the answer takes, not to be copied into the thesis.
 
+### The Level-2 question is promised in the Uvod and never answered
+
+The introduction says the adaptive learning is examined **on two levels**: which criterion
+is the better estimator, and *how far from the source the edges worth removing lie*.
+Chapter 7 answers the first and never returns to the second. That is a promise made in the
+introduction and not kept — the kind of thing an examiner finds by reading the Uvod against
+the results chapter.
+
+The data to answer it has been sitting in `results.csv` since the measurement run, in
+`hop_mix` and `best_hits_by_hop`. Computed over the 95 comparison cells:
+
+- **81 of 95 winning cuts are entirely at hop 0**; 14 contain a deeper edge.
+- By edge, **89.4 % of everything cut is hop 0** — hop 1 is 4.6 %, hop 2 3.3 %, hop 3 2.6 %.
+- Cuts containing a deeper edge score **−0.123** against the best hop0-only method, where
+  hop0-only cuts score **+0.021**.
+
+**Do not report that as "deeper edges do not pay."** Stratifying by reach class and by
+budget share narrows nothing — deep cuts lose inside every stratum — but the cell list
+settles it another way. The worst of the 14 are *exactly* the cells §7b identified as
+starving at 300 iterations: source 96 at k = 10 and source 123 at k = 20 are the two probe
+cells that gained twentyfold and fiftyfold under a longer search, and source 3 at k = 42
+produced a cut with **no hop-0 edge at all** (`{1: 24, 2: 9, 3: 9}`), which is a search that
+never anchored rather than a strategy.
+
+The two cells where a deeper edge appears in a cut that *did* converge both beat the best
+hop0-only method — source 201 at k = 9 (`{0: 8, 1: 1}`, **+0.098**) and source 359 at
+k = 10 (`{0: 9, 1: 1}`, +0.015). Source 201 is a real instance of the choke-point geometry
+that fig 3.1–3.3 draw by hand.
+
+So the honest answer is the one §4.2 predicted in advance: a negative finding here cannot
+separate "deeper edges are useless" from "deeper layers are too big to search", and the
+evidence points at the second. Write 7.5 that way — the finding is that **going deeper is
+mostly a symptom of a search in trouble, and in the two cells where it was a choice rather
+than a symptom it paid.**
+
+Never identified: a real source in Bitcoin Alpha matching the fig 3.1–3.3 scenario. The
+figures are hand-placed drawings. Source 201 at k = 9 is the candidate, and the cut itself
+is not stored — `results.csv` keeps only `hop_mix`, so recovering the actual edges means
+re-running that one cell.
+
 ### The headline margin sits at the noise floor — say so before a reader notices
 
 The pooled ALNS advantage over `probability`, the only criterion that is a real opponent,
