@@ -381,6 +381,44 @@ Mean R: ALNS 0.650, probability 0.637, then a clear gap to degree at 0.440. The 
 has median +0.016. **Recompute all of this from the CSV rather than quoting these figures**
 — they are here to say what shape the answer takes, not to be copied into the thesis.
 
+### Why no choke point exists — the structural fact that explains almost everything
+
+Searched for exhaustively (dominator trees over every source, then brute force over every
+edge of the reachable subgraph for the small ones). The result is the cleanest finding in
+the project and it belongs in **chapter 2**, not chapter 3:
+
+- Of the **2075** sources with out-degree ≥ 2, **2069 (99.7 %) reach exactly 3618 nodes**.
+  Six reach fewer than eight. **Nothing lies in between** — raw reachability is all-or-nothing.
+- 3618 is not a coincidence: it is **SCC + OUT = 3192 + 426**, both already reported in 2.3.
+  Any source that touches the giant component reaches the whole of it and everything
+  downstream of it.
+- The best single hop-0 cut on such a source removes a **median of 1 node** out of 3618
+  (max 8 over a 40-source sample).
+- The best downstream single-edge choke point anywhere in the graph removes **5 nodes** —
+  the same edge, 7591 → 7510, for thousands of sources, guarding a small pendant appendage.
+
+**So fig 3.1–3.2 are true and fig 3.3 is not.** Redundancy is not a mild effect here, it is
+total: no single edge, near the source or far from it, can separate a source from the core.
+And the choke point that fig 3.3 draws — one downstream edge cutting off a large region —
+**does not occur at any meaningful scale in this network.**
+
+Three things fall out of this, and together they are the thesis's real explanatory spine:
+
+1. **It explains the Level-2 negative result** (below). The hop-scope wheel was built to find
+   downstream choke points. There are none worth finding, so a search given enough time
+   correctly returns to hop 0. The mechanism did not fail; the network has nothing for it.
+2. **It explains why the probability criterion dominates** (§7.2). If every source reaches the
+   same 3618 nodes in the base graph, base-graph topology carries almost no information about
+   which edge matters. What differentiates edges is how often the channel is open at all.
+3. **It explains why σ₀ is smooth and small** (2.6, median 206.8) while raw reach is a
+   constant 3618: the cascade travels the *percolated* graph, not the base graph, and with a
+   median probability of 0.018 most edges are absent from most realizations.
+
+The honest consequence for the text: fig 3.1–3.3 stay as **conceptual illustrations of why
+greedy fails**, which is what 3.3 needs them for, but chapter 2 must state that the geometry
+does not occur at scale here — otherwise the reader is left expecting the search to find
+choke points that do not exist.
+
 ### The Level-2 question is promised in the Uvod and never answered
 
 The introduction says the adaptive learning is examined **on two levels**: which criterion
