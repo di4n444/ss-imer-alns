@@ -8,6 +8,48 @@ handoff — no earlier conversation needs to be reconstructed.
 
 ---
 
+## Where this stands (2026-09-06) — the next job is a restructure, not a chapter
+
+All eight chapters are written and the document builds, but a review on 2026-09-05/06 found
+that **the thesis does not deliver what its own introduction promises**, and that the three
+strongest results in the project are not in the text. The next session's job is to rewrite
+around the two hypotheses, not to add material.
+
+**The Uvod states two research questions.** Level 1: can adaptive search beat a fixed
+topological criterion. Level 2: how far from the source do the edges worth removing lie.
+Chapter 7 answers Level 1 and **never returns to Level 2**. That is an unkept promise an
+examiner finds by reading the Uvod against chapter 7.
+
+**Three findings exist, are measured, and are not in the thesis.** All three are written up
+in [REPORT.md](REPORT.md) §7a, in the order they should be read:
+
+1. **No choke point exists on this graph.** 2069 of 2075 multi-out-edge sources reach
+   *exactly* 3618 nodes (= SCC + OUT, both already in 2.3); the best single hop-0 cut removes
+   a median of 1 node, the best downstream choke anywhere removes 5. Fig 3.1–3.2 are true,
+   fig 3.3 does not occur at scale. **This is the explanatory spine the thesis lacks** — it
+   accounts for the Level-2 result, for why the probability criterion dominates, and for why
+   σ₀ is small while raw reach is constant.
+2. **The Level-2 answer is negative and well-supported.** Starved searches given more
+   iterations converge to *pure hop 0* (source 96: 6 deep edges → 0, R 0.008 → 0.169; source
+   123: 8 → 0, R 0.009 → 0.487). Cells that shed deep edges gained +0.107 against +0.009 for
+   those that did not. The searches did not fail to explore deep layers — they explored and
+   rejected them.
+3. **The headline margin sits on the noise floor.** ALNS beats `probability` by +0.016; the
+   median SAA−MC gap is +0.0159. 7.2 has been rewritten to say so and rest the claim on the
+   win/loss record and the stratification instead.
+
+**Still not done, and now worth more than when it was filed as future work:** the
+scenario-subgraph analysis (REPORT §8). Comparing the live-edge realizations to the base
+graph — edge retention, whether the giant SCC survives one percolation draw — is the missing
+*empirical* link for finding 1. The base graph's "everything reaches everything" is a
+property of the base graph only; the cascade travels the percolated graph. `create_subgraphs.
+generate_scenarios` is deterministic from a seed, so this is a short script writing one CSV.
+
+**The document is ~36 pages against a target of ~30**, so the restructure has to cut while it
+adds. Measured section weights and a ranked trim list are below under **Length**.
+
+---
+
 ## The one rule about numbers
 
 **Every number that reaches the thesis comes from `data/*.csv` produced by the code in
@@ -163,19 +205,37 @@ Chapters, in the agreed structure:
         the same cells, the gradient by prior performance, and the four cells that got
         *worse*, which is 7.1's overfitting seen as a cost of search effort. State the
         selection bias before the result. Hands off to chapter 8.
-- [x] 8. Mogućnosti poboljšanja i budući rad — three subsections, each tied to a source
-      rather than asserted: 8.1 allocation by need (stagnation criteria, `hoos2004`),
-      8.2 the σ-greedy (`kimura2008`, and `leskovec2007` for why lazy greedy does *not*
-      port without submodularity), 8.3 the estimate and the seeds (`kleywegt2002`,
-      `mak1999`). Four references added to `bibliography.py`, all verified against the
-      published record.
+- [x] 8. Mogućnosti poboljšanja i budući rad — four subsections: 8.1 allocation by need,
+      8.2 competing versus complementary criteria (the probability/hop-distance argument),
+      8.3 the σ-greedy (`kimura2008`, `leskovec2007`), 8.4 the estimate, seeds and the
+      single-graph limitation (`kleywegt2002`).
+- [x] 7.2 rewritten so the +0.016 margin is scaled against the +0.0159 noise floor, and the
+      dominance of the probability criterion is explained rather than just reported.
+
+### The restructure — what the next session actually has to do
+
+- [ ] **Put finding 1 into chapter 2.** The reachability result (2069/2075 sources reach
+      exactly SCC + OUT = 3618; best single cut removes 1 node) is a topology measurement and
+      belongs beside the bow-tie section that already reports both numbers. Everything else
+      then references it.
+- [ ] **Write the Level-2 answer.** Either a 7.5 or folded into 7.4. The finding is negative
+      and well-supported: deeper edges are a symptom of a search in trouble, and the searches
+      that improved discarded them. Hedge with `ALNS_MAX_HOP_SCOPE = 3`, one seed, and the
+      concentration in a few hub sources.
+- [ ] **Re-point chapter 3.** Fig 3.1–3.3 stay as conceptual illustrations of why greedy
+      fails on redundancy — that argument does not need the geometry to be common — but the
+      text must not leave a reader expecting the search to find choke points that do not
+      exist here.
+- [ ] **Say in chapter 8 that the hop-scope wheel is a candidate for removal**, not tuning,
+      and that a graph with a sparser core is how you would tell whether the idea or the
+      instance was wrong.
+- [ ] **Scenario-subgraph analysis** — the missing empirical link for finding 1. Short script,
+      one CSV.
 - [ ] Zaključak, Sažetak, Summary. The Zaključak is a chapter (`ch09_*.py`); **Sažetak and
       Summary are front matter and are filled in the original .docx**, not generated.
 - [ ] The AI-usage statement, also in the original — the template requires the technologies,
       their versions, the purpose, and a note on the extent of your own intervention.
-- [ ] **The trim, last.** Body is ~36 pages against a target of roughly 30.
-- [ ] Rewrite 7.2's headline so the margin is not overstated — REPORT §7a opens with why.
-      Free to do, and it removes the one internal tension an examiner would find.
+- [ ] **The trim.** See **Length** below for measured weights and a ranked list.
 
 All 16 figures exist: `fig1_1` ER/WS/BA, `fig1_2` live-edge, `fig2_1` degree distribution,
 `fig2_2` probability distribution, `fig2_3` bow-tie, `fig2_4` source reach, `fig2_5`
@@ -227,11 +287,36 @@ heading depth and the rest — check it rather than guessing. What it has alread
 - A `Skraćenice` chapter is optional and this thesis does not have one. Worth considering,
   given ALNS, SAA, MC, IC, SS-IMER and ICM all appear.
 
-**Length.** The body now runs about 36 pages against a target of roughly 30. Chapters 1–6
-were about 34 before 7 and 8 were written, so the two result chapters cost less than the
-ten pages budgeted for them — but the trim is still owed, and it comes out of prose rather
-than out of substance. It is deliberately the **last** step, after the Zaključak and the
-abstracts, so that nothing is cut twice.
+**Length — measured, not guessed.** 13 700 words of prose ≈ 34 pages, plus 16 figures and
+4 tables; the built document is ~36. Target ~30. Weights as of 2026-09-06:
+
+| chapter | words | % | | chapter | words | % |
+|---|---:|---:|---|---|---:|---:|
+| **5 Metode** | **2 451** | **18** | | 6 Implementacija | 1 372 | 10 |
+| 7 Rezultati | 2 019 | 15 | | 8 Poboljšanja | 1 283 | 10 |
+| 2 Bitcoin Alpha | 1 524 | 11 | | 1 Topologija | 1 244 | 9 |
+| 4 Kriteriji | 1 443 | 11 | | Uvod | 647 | 5 |
+| 3 Formulacija | 1 439 | 11 | | | | |
+
+Ranked by value, largest first:
+
+1. **Chapter 5 restates Røpke & Pisinger** — the roulette wheel, the three score increments,
+   the weight-update formula and SA acceptance are all in the cited paper. Cut to what is
+   needed to follow *our* adaptations. `Arhitektura i adaptivne težine` (592 w) and
+   `Kriterij prihvaćanja` (355 w) are the dense spots; **keep** `Slojevi udaljenosti`
+   (433 w), which is the one mechanism with no R&P counterpart. **−400 to −600.**
+2. **Chapter 1** is textbook ER/WS/BA before the problem is stated. Keep equations and the
+   one-line consequence of each, cut the narration. **−300.** Check with the mentor first.
+3. **Chapter 6 `Arhitektura implementacije`** (527 w) is caching detail. **−150.**
+4. Sentence-level tightening for the rest.
+
+Three duplications were already removed on 2026-09-06 (the Uvod arguing ch3's choke-point
+case, 5.1 restating 4.7's tie-breaking, the milder-intervention claim in both Uvod and 3.1).
+The rule that found them: **the introduction may assert, a chapter argues** — repeat
+conclusions, never arguments. The roadmap paragraph is not repetition and stays.
+
+**Do not cut:** 2.6 (carries the population fix ch7 depends on), 7.1 (sets the threshold 7.2
+now leans on), 7.4's selection caveat.
 
 ---
 
