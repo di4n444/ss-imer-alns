@@ -381,6 +381,27 @@ Mean R: ALNS 0.650, probability 0.637, then a clear gap to degree at 0.440. The 
 has median +0.016. **Recompute all of this from the CSV rather than quoting these figures**
 — they are here to say what shape the answer takes, not to be copied into the thesis.
 
+### The headline margin sits at the noise floor — say so before a reader notices
+
+The pooled ALNS advantage over `probability`, the only criterion that is a real opponent,
+is **+0.016**. The median SAA−MC gap is **+0.0159**. Those are the same number. Chapter 7.1
+tells the reader that differences of a few hundredths are not decisive, and then 7.2 leads
+with a difference of exactly that size — an examiner who reads the chapters in order will
+see it, and it is far better for the thesis to state it than to be caught by it.
+
+The case does not collapse, but it has to be made from the right evidence:
+
+- the **win/loss record**, 60 / 13 / 22, which is a directional signal that a mean margin
+  does not carry — losing 22 of 95 is not the profile of a tie;
+- the **stratification**, where the advantage is +0.094 and +0.062 on mid-reach sources and
+  only turns negative on the saturated ones, which §7b shows are starving at 300 iterations.
+
+So the honest headline is: *on instances the search can actually work, adaptive search beats
+the strongest fixed criterion by a clear margin; pooled over all instances the margin falls
+to the order of the estimation error, because the saturated cells are both the majority and
+the ones the iteration budget under-serves.* That is a more defensible claim than the pooled
+mean, and it is the same story §7b already tells. Write 7.2 that way.
+
 ### Four findings the aggregate table hides
 
 All four came out of writing chapter 7 against the CSVs, and all four are recomputed there

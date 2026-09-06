@@ -174,6 +174,8 @@ Chapters, in the agreed structure:
 - [ ] The AI-usage statement, also in the original — the template requires the technologies,
       their versions, the purpose, and a note on the extent of your own intervention.
 - [ ] **The trim, last.** Body is ~36 pages against a target of roughly 30.
+- [ ] Rewrite 7.2's headline so the margin is not overstated — REPORT §7a opens with why.
+      Free to do, and it removes the one internal tension an examiner would find.
 
 All 16 figures exist: `fig1_1` ER/WS/BA, `fig1_2` live-edge, `fig2_1` degree distribution,
 `fig2_2` probability distribution, `fig2_3` bow-tie, `fig2_4` source reach, `fig2_5`
@@ -202,6 +204,13 @@ once to substitute them — because a chapter may point forward (3.3 points at 5
 build refuses to save if any reference is still unresolved. Equations, figures, tables and
 listings work the same way via `t.ref`, `t.figref`, `t.tabref` and `t.coderef`. Do not
 write a section number by hand.
+
+**Every citation was checked against the paper itself** (2026-09-05). Six of the then 24
+entries had wrong metadata, three of them conflations of two different papers, so do not
+add a source from memory — open it. The substantive claims held up; the three that did not
+are recorded in the git history. The list is now 20, each carrying a claim nothing else
+covers, and the rule going forward is: cite the paper you actually read, and prefer a
+source already on the shelf over a stronger one you have not opened.
 
 **The faculty template is the authority on format.**
 `Završni_rad_predložak_lipanj_2026.docx` settles questions of citation style, captions,
