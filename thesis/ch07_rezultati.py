@@ -282,8 +282,8 @@ def _scope(t, results):
     cells = comparison_cells(results)
     everywhere = cells[[f"greedy_{c}" for c in CRITERIA] + ["alns"]].min(axis=1) > 0.9
 
-    t.p("Dosegu ove usporedbe treba jasno odrediti granice. Tri od šest pohlepnih "
-        "kriterija odgovaraju po zamisli slabim usporednim metodama koje koristi ",
+    t.p("Dosegu ove usporedbe treba jasno odrediti granice. Dva od šest pohlepnih "
+        "kriterija odgovaraju po zamisli dvjema heuristikama koje za usporedbu koriste ",
         "{~kimura2008}, uz razlike u izvedbi navedene u odjeljku ", t.sec("pohlepne"),
         ". Metoda koju su sami ", i("predložili"),
         ", pohlepno pretraživanje po izmjerenom dosegu s ponovnim vrednovanjem u svakom "

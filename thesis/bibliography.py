@@ -16,12 +16,9 @@ SOURCES = [
     ("granovetter1973", "Granovetter", 1973),
     ("valiant1979", "Valiant", 1979),
     ("watts1998", "Watts i Strogatz", 1998),
-    ("mak1999", "Mak i sur.", 1999),
     ("albert2002", "Albert i Barabási", 2002),
     ("kleywegt2002", "Kleywegt i sur.", 2002),
     ("kempe2003", "Kempe i sur.", 2003),
-    ("wang2003", "Wang i sur.", 2003),
-    ("hoos2004", "Hoos i Stützle", 2004),
     ("ropke2006", "Røpke i Pisinger", 2006),
     ("leskovec2007", "Leskovec i sur.", 2007),
     ("sheldon2010", "Sheldon i sur.", 2010),
@@ -61,8 +58,8 @@ def narrative(key: str) -> str:
 def expand(text: str) -> str:
     """Substitute every "{key}" and "{~key}" in a sentence.
 
-    Co-cited sources share one bracket: "{wang2003,castellano2010}" becomes
-    "(Wang i sur., 2003; Castellano i Pastor-Satorras, 2010)"."""
+    Co-cited sources share one bracket: "{kumar2016,kumar2018}" becomes
+    "(Kumar i sur., 2016; Kumar i sur., 2018)"."""
     if "{" not in text:
         return text
     out, rest = [], text
@@ -95,20 +92,14 @@ ENTRIES = {
         "Valiant, L. G. The complexity of enumeration and reliability problems. SIAM Journal on Computing, vol. 8, br. 3, 1979.",
     "watts1998":
         "Watts, D. J., Strogatz, S. H. Collective dynamics of 'small-world' networks. Nature, vol. 393, 1998.",
-    "mak1999":
-        "Mak, W.-K., Morton, D. P., Wood, R. K. Monte Carlo bounding techniques for determining solution quality in stochastic programs. Operations Research Letters, vol. 24, br. 1, 1999., str. 47-56.",
     "kleywegt2002":
         "Kleywegt, A. J., Shapiro, A., Homem-de-Mello, T. The Sample Average Approximation Method for Stochastic Discrete Optimization. SIAM Journal on Optimization, vol. 12, br. 2, 2002., str. 479-502.",
-    "hoos2004":
-        "Hoos, H. H., Stützle, T. Stochastic Local Search: Foundations and Applications. San Francisco: Morgan Kaufmann, 2004.",
     "leskovec2007":
         "Leskovec, J., Krause, A., Guestrin, C., Faloutsos, C., VanBriesen, J., Glance, N. Cost-effective Outbreak Detection in Networks. U: Proceedings of the 13th ACM SIGKDD international conference on Knowledge discovery and data mining, 2007.",
     "albert2002":
         "Albert, R., Barabási, A.-L. Statistical mechanics of complex networks. Reviews of Modern Physics, vol. 74, br. 1, 2002.",
     "kempe2003":
         "Kempe, D., Kleinberg, J., Tardos, É. Maximizing the Spread of Influence through a Social Network. U: Proceedings of the ninth ACM SIGKDD international conference on Knowledge discovery and data mining, 2003.",
-    "wang2003":
-        "Wang, Y., Chakrabarti, D., Wang, C., Faloutsos, C. Epidemic Spreading in Real Networks: An Eigenvalue Viewpoint. U: 22nd International Symposium on Reliable Distributed Systems (SRDS), 2003.",
     "ropke2006":
         "Røpke, S., Pisinger, D. An Adaptive Large Neighborhood Search Heuristic for the Pickup and Delivery Problem with Time Windows. Transportation Science, vol. 40, br. 4, 2006.",
     "kimura2008":

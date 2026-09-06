@@ -253,7 +253,7 @@ def _threshold(t, topo):
     t.p("Izravnija je provjera preko matrice u kojoj svaki brid nosi svoju vjerojatnost "
         "prijenosa. Njezina najveća vlastita vrijednost iznosi ", _n(topo.lambda_max_P, 2),
         ", dakle znatno više od jedan, što znači da se mreža nalazi duboko u "
-        "nadkritičnom režimu {wang2003,castellano2010}.")
+        "nadkritičnom režimu {castellano2010}.")
 
     t.p("Ta činjenica oblikuje cijeli ostatak rada. Kaskada iz dobro povezanog izvora "
         "neće izumrijeti sama od sebe, nego će zahvatiti velik dio jako povezane jezgre. "

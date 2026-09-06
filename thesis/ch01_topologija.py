@@ -6,8 +6,8 @@ L / C measures; Albert & Barabasi (2002) for the scale-free review and the prefe
 attachment mechanism, and for error and attack tolerance (their section IX);
 Kempe, Kleinberg & Tardos (2003) for the Independent Cascade model and the live-edge
 equivalence (their Claim 2.3); Kimura et al. (2008) for the ICM rules restated for a
-blocking problem; Wang et al. (2003) and Castellano & Pastor-Satorras (2010) for the two
-epidemic thresholds.
+blocking problem; Castellano & Pastor-Satorras (2010) for the spectral
+epidemic threshold.
 """
 
 import omml as M
@@ -296,8 +296,9 @@ def _threshold(t):
 
     t.p("Stvarni sustavi poput mreže Bitcoin Alpha imaju, međutim, fiksnu topologiju. "
         "{~castellano2010} pokazuju da za takve mreže teorija srednjeg polja zakazuje jer "
-        "zanemaruje njihovu geometrijsku strukturu. Već {~wang2003} pokazuju da je prag na "
-        "proizvoljnom grafu određen najvećom vlastitom vrijednošću ", sub(v("λ"), up("max")), " matrice susjedstva {wang2003,castellano2010}:")
+        "zanemaruje njihovu geometrijsku strukturu. Prag je na proizvoljnom grafu umjesto "
+        "toga određen najvećom vlastitom vrijednošću ", sub(v("λ"), up("max")),
+        " matrice susjedstva {castellano2010}:")
 
     t.eq(sub(v("λ"), up("c")), up(" = "), frac(up("1"), sub(v("λ"), up("max"))),
          label="spectral")

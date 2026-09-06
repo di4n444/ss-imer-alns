@@ -1,10 +1,9 @@
 """8. Mogućnosti poboljšanja i budući rad.
 
 Three sections, each one thing the measurement showed is worth doing next, and each tied
-to a source rather than asserted: the search-effort allocation to the stagnation criteria
-of Hoos & Stützle (2004), the sigma-greedy to Kimura et al. (2008) and to the lazy-greedy
+to a source where one is needed: the sigma-greedy to Kimura et al. (2008) and to the lazy-greedy
 acceleration of Leskovec et al. (2007), and the estimate to the sample average
-approximation literature (Kleywegt et al., 2002; Mak et al., 1999).
+approximation literature (Kleywegt et al., 2002).
 
 Section 5.1 promises this chapter will explain why the sigma-greedy was not built and how
 it could be, so 8.2 has to deliver exactly that.
@@ -112,9 +111,9 @@ def _allocation(t, results, scaled):
         "pretraga uopće počne. On je, međutim, samo predviđanje, dok su prva dva "
         "pokazatelja opažanja same pretrage, pa su i pouzdanija.")
 
-    t.p("Zaustavljanje pretrage kada ona dulje vrijeme ne napreduje uobičajen je postupak "
-        "u stohastičkom lokalnom pretraživanju i naziva se kriterijem stagnacije "
-        "{hoos2004}. Ovdje je predloženi zahvat njegova zrcalna slika: umjesto da se "
+    t.p("Zaustavljanje pretrage koja dulje vrijeme ne napreduje uobičajen je postupak u "
+        "stohastičkom pretraživanju i naziva se kriterijem stagnacije. Ovdje je "
+        "predloženi zahvat njegova zrcalna slika: umjesto da se "
         "prekine pretraga koja više ne napreduje, produljuje se ona koja još napreduje. "
         "Dvije su izvedbe moguće. Jednostavnija je u dva prolaza — sve se instance izvedu "
         "uz skroman proračun, a zatim se ponove samo one koje pokazatelji izdvoje. "
@@ -132,8 +131,8 @@ def _sigma_greedy(t):
     t.h2("Pohlepna metoda vođena izmjerenim dosegom", label="sigmapohlepna")
 
     t.p("Kako je rečeno u odjeljku ", t.sec("pohlepne"),
-        ", šest pohlepnih metoda u ovom radu odgovara onima koje {~kimura2008} koriste kao "
-        "usporedne. Metoda koju oni sami predlažu jača je: u svakom koraku bira brid koji "
+        ", dva pohlepna kriterija u ovom radu odgovaraju heuristikama koje {~kimura2008} "
+        "koriste za usporedbu. Metoda koju oni sami predlažu jača je: u svakom koraku bira brid koji "
         "najviše smanjuje ", i("izmjerenu"),
         " procjenu dosega, i to na mreži iz koje su prethodno odabrani bridovi već "
         "uklonjeni. Ona bi bila pravi protivnik metaheuristici i njezino bi uvrštavanje "
@@ -211,11 +210,11 @@ def _estimate(t):
     t.p("U ovom je radu ta pojava izmjerena tako da se rezultat provjeri na jednom većem "
         "neovisnom uzorku od ", str(config.MC_SCENARIO_COUNT),
         " realizacija. To je dovoljno da se pokaže da pojava postoji i koliko je velika, "
-        "ali ne daje ocjenu njezine nesigurnosti. Uobičajen postupak koji to omogućuje "
-        "sastoji se u tome da se optimizacija ponovi na više ", i("neovisnih"),
-        " uzoraka jednake veličine, nakon čega se iz raspršenja dobivenih rješenja procijeni "
-        "razlika do pravog optimuma, zajedno s intervalom pouzdanosti {mak1999}. Cijena je "
-        "izravna: pretraživanje se izvodi onoliko puta koliko ima uzoraka.")
+        "ali ne daje ocjenu njezine nesigurnosti. Postupak koji to omogućuje opisan je u "
+        "istom radu: optimizacija se ponovi na više ", i("neovisnih"),
+        " uzoraka jednake veličine, pa se iz raspršenja dobivenih rješenja procijeni "
+        "razlika do pravog optimuma. Cijena je izravna: pretraživanje se izvodi onoliko "
+        "puta koliko ima uzoraka.")
 
     t.p("Uz to bi vrijedilo provjeriti i same realizacije. Svaka je realizacija podgraf "
         "polazne mreže dobiven zadržavanjem svakog brida s njegovom vjerojatnošću "
@@ -231,6 +230,5 @@ def _estimate(t):
         "jednako ocijenjenim bridovima, kojih na ovoj mreži ima mnogo (odjeljak ",
         t.sec("izjednacenost"),
         "). Ponavljanje svake instance s više sjemena pretvorilo bi svaki rezultat iz jedne "
-        "vrijednosti u raspodjelu, što je i primjeren način opisivanja stohastičkog "
-        "pretraživanja {hoos2004}. Raspršenje bi se tada iskazalo kao svojstvo metode, a ne "
-        "usrednjilo.")
+        "vrijednosti u raspodjelu, što je za stohastičko pretraživanje primjereniji opis. "
+        "Raspršenje bi se tada iskazalo kao svojstvo metode, a ne usrednjilo.")
